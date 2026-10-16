@@ -1,0 +1,35 @@
+# Reviewed building evidence — 16 October 2026
+
+`src/lib/building-evidence.json` contains 17 original editorial summaries and explicit footprint associations. It is a separate overlay; the OSM snapshot, tags, IDs and checksums are unchanged.
+
+A record applies only when the feature is a building, its exact OSM ID and expected name agree, and its recorded centre remains within 50 metres of the reviewed centre. Proximity alone never establishes identity. A dataset refresh that changes these checks drops the association until reviewed again. Whole-site milestones do not automatically date constituent buildings.
+
+Eight records provide a specific built/completed/opened/inaugurated year. Four add previously missing dates (Jama Masjid, Fatehpuri Masjid, Qila-i-Kuhna Mosque and Muhammad Shah’s tomb); four corroborate an existing OSM date. The animation therefore contains 19 dated footprints: eight reviewed and 11 contributor records. It depicts surviving mapped buildings by their recorded date, not reconstruction of historical Delhi. Later alterations are not modelled.
+
+Source-check dates are retained per citation. Existing ASI, Ministry of Tourism and Delhi Tourism research was reused where available; the Jama Masjid and Purana Qila pages and Fatehpuri and Sikandar Lodi secondary references were reopened for this update. The museum’s direct government site returned 503 and an NGMA candidate URL returned 404; neither was used to invent a construction date. The retained Lodhi Garden government text explicitly dates Muhammad Shah’s tomb to 1444. Secondary sources are identified by publisher.
+
+| Mapped structure | ID | Reviewed date statement | Source |
+| --- | --- | --- | --- |
+| Jama Masjid | `relation/3926057` | Completed 1656 | [Ministry of Tourism · Jama Masjid](https://www.incredibleindia.gov.in/en/delhi/delhi/jama-masjid) |
+| Fatehpuri Masjid | `relation/12283238` | Built 1650 | [Wikipedia · Fatehpuri Mosque](https://en.wikipedia.org/wiki/Fatehpuri_Mosque) |
+| Qila-i-Khuna Mosque | `way/370569205` | Built 1541 | [Ministry of Tourism · Purana Qila](https://www.incredibleindia.gov.in/en/delhi/delhi/purana-quila) |
+| Tomb of Muhammad Shah Sayyid | `way/243175581` | Built 1444 | [Ministry of Tourism · Lodhi Garden](https://www.incredibleindia.gov.in/en/delhi/delhi/lodhi-garden) |
+| Tomb of Sikandar Lodhi | `way/359512682` | Built 1517–1518; range | [Wikipedia — Tomb of Sikandar Lodi (secondary source)](https://en.wikipedia.org/wiki/Tomb_of_Sikandar_Lodi) |
+| Lotus Temple | `way/44827278` | Opened December 1986 | [Ministry of Tourism · Lotus Temple](https://www.incredibleindia.gov.in/en/delhi/delhi/lotus-temple) |
+| Akshardham | `way/400921719` | Opened 2005 | [Ministry of Tourism · Swaminarayan Akshardham](https://www.incredibleindia.gov.in/en/delhi/delhi/akshardham-temple) |
+| Safdarjung's Tomb | `way/103602249` | Built 1754 | [Delhi Tourism · Safdarjung’s Tomb](https://delhitourism.gov.in/tourist_place/safdarjang_tomb.html) |
+| Old Parliament House | `relation/6087635` | Inaugurated 1927 | [Delhi Tourism · Historic Parliament House (legacy description)](https://delhitourism.gov.in/tourist_place/parliment_house.html) |
+| Humayun's Tomb | `way/220385654` | Built circa 1570; approximate | [Ministry of Tourism · Humayun’s Tomb](https://www.incredibleindia.gov.in/en/delhi/delhi/humayuns-tomb) |
+| Qutb Minar | `way/369140381` | Construction began 1199; completion not assigned | [Ministry of Tourism · Qutb Minar](https://www.incredibleindia.gov.in/en/delhi/delhi/qutub-minar) |
+| Agrasen ki Baoli | `way/500411689` | 14th–15th century; date uncertain | [Ministry of Tourism · Agrasen ki Baoli](https://www.incredibleindia.gov.in/en/delhi/delhi/agrasen-ki-baoli) |
+| Gurdwara Bangla Sahib | `way/111695183` | 1664 visit; building date unknown | [Ministry of Tourism · Gurudwara Bangla Sahib](https://www.incredibleindia.gov.in/en/delhi/delhi/gurudwara-bangla-sahib) |
+| National Museum | `relation/17080654` | Museum established 1949; building date unverified | [Ministry of Tourism · National Museum](https://www.incredibleindia.gov.in/en/delhi/delhi/national-museum) |
+| Jaipur House | `way/369650195` | Gallery opened 1954; palace date not assigned | [Ministry of Tourism · National Gallery of Modern Art](https://www.incredibleindia.gov.in/en/delhi/delhi/national-gallery-of-modern-art) |
+| Sacred Heart Catholic Cathedral | `way/80926769` | Construction began 1930; completion not assigned | [Delhi Tourism · Sacred Heart Cathedral](https://delhitourism.gov.in/tourist_place/spritual_delhi.html) |
+| Raj Ghat | `way/1448399385` | Cremation site, 1948; not a building date | [Ministry of Tourism · Raj Ghat](https://www.incredibleindia.gov.in/en/delhi/delhi/raj-ghat) |
+
+## Export semantics
+
+CSV retains `construction_date` as the original OSM value, and adds `timeline_year`, `timeline_date_label`, `timeline_date_basis`, `timeline_date_source`, `reviewed_building_history` and `reviewed_history_sources`. GeoJSON retains original properties and adds `timeline_date` and `reviewed_building_evidence`. The latter contains the sources, check dates, identity constraints and wider-site relationship.
+
+Construction starts, institutional events, century estimates and date ranges are presented as contextual statements with a null reviewed year. Existing parseable OSM values remain contributor records, including Humayun’s Tomb’s 1570 alongside its approximate source history. Unknown ordinary-building dates remain unknown. The original raw OSM download does not contain the editorial overlay; use the application’s study exports to obtain both.

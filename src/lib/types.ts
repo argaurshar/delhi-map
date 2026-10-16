@@ -1,4 +1,5 @@
 import type { ContextId, PeriodId, TimelineMode } from "./chronology";
+import type { BuildingEvidence, buildingDate } from "./buildings";
 import type {
   Feature,
   FeatureCollection,
@@ -36,6 +37,8 @@ export interface Properties {
   center?: [number, number];
   tags?: Record<string, string>;
   min_height_m?: number;
+  timeline_date?: ReturnType<typeof buildingDate>;
+  reviewed_building_evidence?: BuildingEvidence | null;
 }
 export type CityFeature = Feature<Geometry, Properties>;
 export type CityData = FeatureCollection<Geometry, Properties>;

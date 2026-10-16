@@ -6,6 +6,7 @@ import bbox from "@turf/bbox";
 import { featureCollection } from "@turf/helpers";
 import type { Feature, Polygon, MultiPolygon } from "geojson";
 import { matchesSize, PILOT } from "./data";
+import { buildingDate, buildingEvidence } from "./buildings";
 import type {
   Analysis,
   CityData,
@@ -122,6 +123,12 @@ export function toCsv(
     "roof_shape",
     "wikidata",
     "wikipedia",
+    "timeline_year",
+    "timeline_date_label",
+    "timeline_date_basis",
+    "timeline_date_source",
+    "reviewed_building_history",
+    "reviewed_history_sources",
   ];
   const rows = result.features.map((f) => [
     f.properties.id,
@@ -151,6 +158,14 @@ export function toCsv(
     f.properties.tags?.["roof:shape"],
     f.properties.tags?.wikidata,
     f.properties.tags?.wikipedia,
+    buildingDate(f)?.year,
+    buildingDate(f)?.label,
+    buildingDate(f)?.basis,
+    buildingDate(f)?.sourceUrl,
+    buildingEvidence(f)?.summary,
+    buildingEvidence(f)
+      ?.sources.map((s) => s.url)
+      .join(" | "),
   ]);
   return [keys, ...rows]
     .map((row) => row.map(escapeCsv).join(","))

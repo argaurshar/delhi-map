@@ -5,7 +5,7 @@ The supplied LAYRS Amsterdam clip contains 458 frames at 30 fps (15.27 seconds).
 | Reference interaction | Delhi implementation |
 | --- | --- |
 | City overview and continuous camera navigation | Smooth overview flights, city-to-building selection flights, existing orbit and guided tours; ordinary pan/zoom/rotation remains available. |
-| Buildings appear as construction dates advance | Building dates playback filters actual footprints by parseable OSM `start_date`; newly revealed dated footprints grow into view. |
+| Buildings appear as construction dates advance | Building dates playback filters actual footprints by reviewed building dates or parseable OSM `start_date`; newly revealed dated footprints grow into view. |
 | Year, count, histogram and playhead advance together | A linked exact-year histogram, animated future-bar emphasis, year counter and revealed-record count share the same cutoff and record set. |
 | Play and return to Today | Play/pause/resume, replay, speed selection and automatic stop at Today. Scrubbing is additionally supported. |
 | Construction-period isolation | Click a Date legend row to isolate that period; click again to clear it. Unknown dates do not enter a dated period. |
@@ -19,7 +19,7 @@ The supplied LAYRS Amsterdam clip contains 458 frames at 30 fps (15.27 seconds).
 
 ## Evidence limits
 
-- The 63,676-footprint snapshot contains 16 start-date tags, but only 15 parse as specific years. `C14` remains unknown. Dates are contributor records, not independently checked completion years.
+- The 63,676-footprint snapshot contains 16 start-date tags, but only 15 parse as specific years. `C14` remains unknown. The reviewed overlay adds four new dates and corroborates four of the existing dates. Playback now contains 19 dated footprints; each dossier identifies the source basis. Other OSM dates remain contributor records.
 - The 24 curated landmark milestones are a separate timeline. Some describe approximate phases, construction starts or institutional openings; they never supply ages to surrounding footprints.
 - Undated context can be retained or hidden. It is not assigned a historical age. Building parts lack dependable parent/date associations and are omitted from isolated chronological views.
 - Roof colours classify recorded tags; this update does not reconstruct roof meshes. Historic/heritage tags do not establish legal protection.

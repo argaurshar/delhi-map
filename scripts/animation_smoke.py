@@ -23,8 +23,8 @@ with sync_playwright() as p:
     page.on('pageerror',lambda e:errors.append(str(e)))
     page.on('console',lambda m:errors.append(m.text) if m.type=='error' else None)
     page.goto(URL,wait_until='networkidle');ready(page)
-    assert page.locator('.chronology').get_attribute('data-total')=='15'
-    assert '63,661 undated' in page.locator('.chronology-note').inner_text()
+    assert page.locator('.chronology').get_attribute('data-total')=='19'
+    assert '63,657 undated' in page.locator('.chronology-note').inner_text()
     page.get_by_role('checkbox',name='Undated context').uncheck()
     # A known location gives a direct geometry-level check of historical filtering.
     search=page.get_by_role('textbox',name='Search places and mapped buildings');search.fill('Lotus Temple')
@@ -47,9 +47,9 @@ with sync_playwright() as p:
     assert page.locator('.right-panel').evaluate('el=>getComputedStyle(el).animationName')=='inspector-enter'
     page.get_by_role('button',name='Close feature details',exact=True).click()
     page.mouse.move(600,400)
-    # Two exact dated records through 1600, and 15 total at Today.
-    slider.fill('1600');assert page.locator('.chronology').get_attribute('data-revealed')=='2'
-    slider.fill('2026');assert page.locator('.chronology').get_attribute('data-revealed')=='15'
+    # Four dated records through 1600, and 19 total at Today.
+    slider.fill('1600');assert page.locator('.chronology').get_attribute('data-revealed')=='4'
+    slider.fill('2026');assert page.locator('.chronology').get_attribute('data-revealed')=='19'
     page.get_by_role('checkbox',name='Undated context').check()
     page.get_by_role('combobox',name='Chronology speed').select_option('4')
     page.get_by_role('button',name='Replay chronology',exact=True).click()
@@ -62,7 +62,7 @@ with sync_playwright() as p:
     assert page.get_by_role('button',name='Play chronology',exact=True).is_visible()
     settled(page);page.screenshot(path=str(OUT/'03-chronology-overview.png'))
     page.get_by_role('button',name='Before 1700',exact=False).click()
-    assert page.locator('.chronology').get_attribute('data-total')=='2'
+    assert page.locator('.chronology').get_attribute('data-total')=='6'
     assert page.locator('.period-row[aria-pressed="true"]').count()==1
     page.get_by_role('button',name='Before 1700',exact=False).click()
     page.get_by_role('button',name='Roof forms',exact=False).click();settled(page)
@@ -97,7 +97,7 @@ with sync_playwright() as p:
     assert mobile.evaluate('document.documentElement.scrollWidth<=innerWidth')
     assert mobile.get_by_role('button',name='Play chronology',exact=True).is_disabled()
     mobile.get_by_role('slider',name='Building date cutoff').fill('1600')
-    assert mobile.locator('.chronology').get_attribute('data-revealed')=='2'
+    assert mobile.locator('.chronology').get_attribute('data-revealed')=='4'
     mobile.get_by_role('button',name='Show layer panel',exact=True).click()
     mobile.get_by_role('button',name='Places of worship',exact=False).click();settled(mobile)
     assert mobile.locator('.context-description h3').inner_text()=='Places of worship'

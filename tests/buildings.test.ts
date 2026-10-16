@@ -1,14 +1,87 @@
 import { describe, expect, it } from "vitest";
+import { readFileSync } from "node:fs";
 import {
   recordedYear,
   safeExternalUrl,
   linkedLandmark,
   footprintPerimeter,
+  buildingDate,
+  buildingEvidence,
+  withBuildingEvidence,
 } from "../src/lib/buildings";
 import { HERITAGE, rectangle } from "../src/lib/data";
-import type { CityFeature } from "../src/lib/types";
+import type { Analysis, CityData, CityFeature } from "../src/lib/types";
+import { toCsv } from "../src/lib/analysis";
+
+const city = JSON.parse(
+  readFileSync("public/data/delhi.geojson", "utf8"),
+) as CityData;
+const named = (name: string) =>
+  city.features.find(
+    (f) => f.properties.kind === "building" && f.properties.name === name,
+  )!;
 
 describe("Building evidence", () => {
+  it("links reviewed dates to explicit footprints and retains the original map record", () => {
+    const jama = named("Jama Masjid");
+    expect(jama.properties.start_date).toBeNull();
+    expect(buildingDate(jama)?.year).toBe(1656);
+    expect(buildingDate(jama)?.sourceUrl).toContain("incredibleindia.gov.in");
+    expect(city.features.filter((f) => buildingEvidence(f))).toHaveLength(17);
+    for (const patch of [
+      { id: "way/nearby" },
+      { name: "A neighbouring shop" },
+      { kind: "building_part" },
+      { center: [77.2, 28.6] },
+      { center: undefined },
+    ]) {
+      const changed = {
+        ...jama,
+        properties: { ...jama.properties, ...patch },
+      } as CityFeature;
+      expect(buildingEvidence(changed)).toBeNull();
+      expect(buildingDate(changed)).toBeNull();
+    }
+  });
+  it("keeps ranges, construction starts and institutional events out of added exact dates", () => {
+    for (const name of [
+      "National Museum",
+      "Jaipur House",
+      "Qutb Minar",
+      "Gurdwara Bangla Sahib",
+      "Tomb of Sikandar Lodhi",
+      "Agrasen ki Baoli",
+      "Raj Ghat",
+    ]) {
+      expect(buildingEvidence(named(name))?.date?.label).toBeTruthy();
+      expect(buildingDate(named(name))).toBeNull();
+    }
+    // Retain an existing contributor date while identifying its approximate source history.
+    expect(buildingDate(named("Humayun's Tomb"))?.basis).toBe(
+      "OSM contributor record",
+    );
+    expect(buildingEvidence(named("Humayun's Tomb"))?.date?.year).toBeNull();
+  });
+  it("exports reviewed provenance separately from original OSM dates and links", () => {
+    const jama = named("Jama Masjid");
+    const exported = withBuildingEvidence(jama);
+    expect(exported.properties.start_date).toBeNull();
+    expect(exported.properties.source_url).toContain("openstreetmap.org");
+    expect(exported.properties.timeline_date?.year).toBe(1656);
+    expect(
+      exported.properties.reviewed_building_evidence?.sources[0].url,
+    ).toContain("incredibleindia.gov.in");
+    const csv = toCsv(
+      { features: [jama] } as Analysis,
+      "test",
+      "Jama Masjid study",
+    );
+    expect(csv).toContain(
+      '"timeline_year","timeline_date_label","timeline_date_basis","timeline_date_source"',
+    );
+    expect(csv).toContain('"1656","Completed 1656","Reviewed source"');
+    expect(csv).toContain('"construction_date"');
+  });
   it("does not convert unknown, approximate or ranged dates into exact years", () => {
     expect(recordedYear("1986")).toBe(1986);
     expect(recordedYear("1931-02-12")).toBe(1931);

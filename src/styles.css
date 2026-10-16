@@ -2990,3 +2990,19 @@ td a {
     flex-direction: column;
   }
 }
+
+.reviewed-evidence {
+  padding: 14px;
+  margin: 16px 0;
+  background: #edf1eb;
+  border-left: 3px solid #6e9989;
+  border-radius: 4px;
+  font-size: 12px;
+  line-height: 1.65;
+}
+.reviewed-evidence h3 {
+  margin-top: 0;
+}
+.reviewed-evidence .source-link {
+  overflow-wrap: anywhere;
+}

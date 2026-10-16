@@ -1,6 +1,6 @@
 import type { CityFeature, Heritage, SizeFilter } from "./types";
 import { matchesSize } from "./data";
-import { recordedYear } from "./buildings";
+import { buildingYear } from "./buildings";
 
 export type TimelineMode = "buildings" | "heritage";
 export type ContextId =
@@ -242,7 +242,7 @@ export function buildingDateRecords(
   period: PeriodId | null,
 ): DateRecord[] {
   return features.flatMap((f) => {
-    const y = recordedYear(f.properties.start_date);
+    const y = buildingYear(f);
     if (
       f.properties.kind !== "building" ||
       !matchesSize(f.properties, size) ||

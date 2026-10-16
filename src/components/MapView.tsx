@@ -31,7 +31,7 @@ import {
   type PeriodId,
   type TimelineMode,
 } from "../lib/chronology";
-import { recordedYear } from "../lib/buildings";
+import { buildingYear } from "../lib/buildings";
 import { HERITAGE, PILOT } from "../lib/data";
 
 export interface MapHandle {
@@ -351,7 +351,7 @@ export const MapView = forwardRef<MapHandle, Props>(
       m.on("load", () => {
         const data = latest.current.data;
         dated.current = data.features.flatMap((f) => {
-          const year = recordedYear(f.properties.start_date);
+          const year = buildingYear(f);
           return f.properties.kind === "building" && year !== null
             ? [{ id: f.properties.id, year }]
             : [];
@@ -372,7 +372,7 @@ export const MapView = forwardRef<MapHandle, Props>(
               min_height_m: f.properties.min_height_m,
               road_type: f.properties.road_type,
               rail_type: f.properties.rail_type,
-              recorded_year: recordedYear(f.properties.start_date),
+              recorded_year: buildingYear(f),
               ...Object.fromEntries(
                 CONTEXTS.filter((c) => c.id !== "none").map((c) => [
                   `context_${c.id}`,
@@ -675,7 +675,7 @@ export const MapView = forwardRef<MapHandle, Props>(
             if (p.kind === "road" && !latest.current.layers.streets) continue;
             if (p.kind === "building") {
               const view = latest.current,
-                y = recordedYear(p.start_date);
+                y = buildingYear(feature);
               if (!view.layers.buildings || !inPeriod(y, view.period)) continue;
               if (
                 view.timelineMode === "buildings" &&

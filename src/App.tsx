@@ -51,7 +51,11 @@ import {
   type PeriodId,
   type TimelineMode,
 } from "./lib/chronology";
-import { recordedYear } from "./lib/buildings";
+import {
+  buildingDate,
+  buildingYear,
+  withBuildingEvidence,
+} from "./lib/buildings";
 import { CinematicControls } from "./components/CinematicControls";
 import { HeritagePhoto, HeritageDetails } from "./components/HeritageProfile";
 import { BuildingProfile } from "./components/BuildingProfile";
@@ -209,9 +213,7 @@ export default function App() {
     const matched = sizeFeatures.filter((f) => contextCategory(f, context));
     return {
       total: matched.length,
-      unknown: matched.filter(
-        (f) => recordedYear(f.properties.start_date) === null,
-      ).length,
+      unknown: matched.filter((f) => buildingYear(f) === null).length,
     };
   }, [sizeFeatures, context]);
   const periodCounts = useMemo(
@@ -500,7 +502,7 @@ export default function App() {
   }
   function selectFeature(feature: CityFeature, fly = false) {
     setPlaying(false);
-    const date = recordedYear(feature.properties.start_date);
+    const date = buildingYear(feature);
     if (date !== null) setYear((y) => Math.max(y, date));
     if (fly) {
       setPeriod(null);
@@ -629,6 +631,8 @@ export default function App() {
               JSON.stringify(
                 {
                   ...analysis.result.clipped,
+                  features:
+                    analysis.result.clipped.features.map(withBuildingEvidence),
                   metadata: {
                     dataset: manifest.id,
                     study_area: study,
@@ -1211,7 +1215,7 @@ export default function App() {
             </div>
             <p className="micro-note">
               {theme === "era"
-                ? "Dates come only from recorded OSM start dates. Grey buildings have no usable date; nearby monuments do not date them."
+                ? "Dates combine reviewed building sources and recorded OSM start dates. Open a building for its date basis and source. Grey buildings have no usable date."
                 : theme === "height"
                   ? `Only ${heightCount} records have height estimates. Grey means unknown.`
                   : theme === "use"
@@ -1407,9 +1411,9 @@ export default function App() {
                         </dd>
                       </div>
                       <div>
-                        <dt>Construction date</dt>
+                        <dt>Timeline date</dt>
                         <dd>
-                          {featureSelection.properties.start_date ?? "Unknown"}
+                          {buildingDate(featureSelection)?.label ?? "Unknown"}
                         </dd>
                       </div>
                       <div>
@@ -1889,14 +1893,17 @@ export default function App() {
               filters {HERITAGE.length} curated sites and includes approximate
               dates and institutional milestones, as labelled in each profile.
               It does not reconstruct historical Delhi. Building dates playback
-              and the Date colour mode use only parseable OSM start dates, as
-              recorded, rather than independently verified completion years;
-              unrecorded dates stay neutral in Date mode and can be hidden with
-              Undated context. Context colours classify recorded tags and do not
-              imply age. The timeline chart counts matching records across the
-              urban core, independently of the study-area analysis. Profiles
-              cite ASI, Ministry of Tourism, Delhi Tourism and secondary
-              sources. Architectural readings are editorial interpretation.
+              and the Date colour mode combine reviewed dates for explicitly
+              matched buildings with parseable OSM start dates. Each dossier
+              identifies the date basis and source. Institutional milestones,
+              ranges and approximate dates are not added as exact building ages;
+              remaining unknown dates stay neutral in Date mode and can be
+              hidden with Undated context. Context colours classify recorded
+              tags and do not imply age. The timeline chart counts matching
+              records across the urban core, independently of the study-area
+              analysis. Profiles cite ASI, Ministry of Tourism, Delhi Tourism
+              and secondary sources. Architectural readings are editorial
+              interpretation.
             </p>
           </div>
           <div className="source-card">

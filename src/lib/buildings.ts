@@ -1,4 +1,71 @@
 import type { CityFeature, Heritage } from "./types";
+import evidenceRecords from "./building-evidence.json";
+
+export interface BuildingEvidence {
+  id: string;
+  expectedName: string;
+  center: number[];
+  landmarkId?: string;
+  relationship: string;
+  summary: string;
+  date?: { year: number | null; label: string; source: number };
+  sources: { title: string; url: string; checked: string }[];
+}
+const evidenceIndex = new Map<string, BuildingEvidence>(
+  evidenceRecords.map((record) => [record.id, record]),
+);
+
+// Explicitly reviewed identities only. A changed dataset must not silently
+// transfer a date to a different building, a nearby building or a building part.
+export function buildingEvidence(f: CityFeature): BuildingEvidence | null {
+  const record = evidenceIndex.get(f.properties.id);
+  return record &&
+    f.properties.kind === "building" &&
+    f.properties.name === record.expectedName &&
+    f.properties.center &&
+    distanceMeters(f.properties.center, record.center) < 50
+    ? record
+    : null;
+}
+
+export function buildingDate(f: CityFeature) {
+  if (f.properties.kind !== "building") return null;
+  const evidence = buildingEvidence(f);
+  if (evidence?.date?.year != null) {
+    const source = evidence.sources[evidence.date.source];
+    return {
+      year: evidence.date.year,
+      label: evidence.date.label,
+      basis: "Reviewed source",
+      sourceTitle: source.title,
+      sourceUrl: source.url,
+    };
+  }
+  const year = recordedYear(f.properties.start_date);
+  return year === null
+    ? null
+    : {
+        year,
+        label: `${f.properties.start_date} · recorded start date`,
+        basis: "OSM contributor record",
+        sourceTitle: "OpenStreetMap",
+        sourceUrl: f.properties.source_url,
+      };
+}
+
+export const buildingYear = (f: CityFeature): number | null =>
+  buildingDate(f)?.year ?? null;
+
+export function withBuildingEvidence(f: CityFeature): CityFeature {
+  return {
+    ...f,
+    properties: {
+      ...f.properties,
+      timeline_date: buildingDate(f),
+      reviewed_building_evidence: buildingEvidence(f),
+    },
+  };
+}
 
 export function centerOf(f: CityFeature): [number, number] {
   if (f.properties.center) return f.properties.center;

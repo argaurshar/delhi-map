@@ -1,0 +1,387 @@
+[
+  {
+    "id": "relation/3926057",
+    "expectedName": "Jama Masjid",
+    "center": [77.232961, 28.6506822],
+    "relationship": "same building",
+    "summary": "Shah Jahan commissioned this mosque in Shahjahanabad. The Ministry of Tourism dates construction to 1650–1656. The reviewed association is to the named mosque footprint, not surrounding shops or houses.",
+    "sources": [
+      {
+        "title": "Ministry of Tourism · Jama Masjid",
+        "url": "https://www.incredibleindia.gov.in/en/delhi/delhi/jama-masjid",
+        "checked": "2026-10-16"
+      }
+    ],
+    "landmarkId": "jama-masjid",
+    "date": {
+      "year": 1656,
+      "label": "Completed 1656",
+      "source": 0
+    }
+  },
+  {
+    "id": "relation/12283238",
+    "expectedName": "Fatehpuri Masjid",
+    "center": [77.2222611, 28.656731],
+    "relationship": "same building",
+    "summary": "Fatehpuri Begum commissioned this mosque at the western end of Chandni Chowk. The dated record applies to the named mosque, not the adjacent wholesale market.",
+    "sources": [
+      {
+        "title": "Wikipedia · Fatehpuri Mosque",
+        "url": "https://en.wikipedia.org/wiki/Fatehpuri_Mosque",
+        "checked": "2026-10-16"
+      }
+    ],
+    "landmarkId": "fatehpuri",
+    "date": {
+      "year": 1650,
+      "label": "Built 1650",
+      "source": 0
+    }
+  },
+  {
+    "id": "way/370569205",
+    "expectedName": "Qila-i-Khuna Mosque",
+    "center": [77.2448161, 28.6097447],
+    "relationship": "part of site",
+    "summary": "This is Qila-i-Kuhna Mosque inside Purana Qila. The Ministry of Tourism attributes it to Sher Shah Suri and dates it to 1541. Other structures in the fort have separate histories.",
+    "sources": [
+      {
+        "title": "Ministry of Tourism · Purana Qila",
+        "url": "https://www.incredibleindia.gov.in/en/delhi/delhi/purana-quila",
+        "checked": "2026-10-16"
+      }
+    ],
+    "landmarkId": "purana-qila",
+    "date": {
+      "year": 1541,
+      "label": "Built 1541",
+      "source": 0
+    }
+  },
+  {
+    "id": "way/243175581",
+    "expectedName": "Tomb of Muhammad Shah Sayyid",
+    "center": [77.2182854, 28.5910085],
+    "relationship": "part of site",
+    "summary": "The Ministry of Tourism dates the tomb of Sultan Muhammad Shah Sayyid to 1444. Its octagonal tomb is one of several separately dated monuments within today’s Lodhi Garden. The original map links to the ruler, so that link does not establish the building date.",
+    "sources": [
+      {
+        "title": "Ministry of Tourism · Lodhi Garden",
+        "url": "https://www.incredibleindia.gov.in/en/delhi/delhi/lodhi-garden",
+        "checked": "2026-10-16"
+      }
+    ],
+    "landmarkId": "lodhi",
+    "date": {
+      "year": 1444,
+      "label": "Built 1444",
+      "source": 0
+    }
+  },
+  {
+    "id": "way/359512682",
+    "expectedName": "Tomb of Sikandar Lodhi",
+    "center": [77.2215497, 28.5962998],
+    "relationship": "part of site",
+    "summary": "Ibrahim Lodi built this tomb for his father, Sikandar Lodi. The reference gives a construction range of 1517–1518; no single exact year is assigned to the building chronology.",
+    "sources": [
+      {
+        "title": "Wikipedia — Tomb of Sikandar Lodi (secondary source)",
+        "url": "https://en.wikipedia.org/wiki/Tomb_of_Sikandar_Lodi",
+        "checked": "2026-10-16"
+      }
+    ],
+    "landmarkId": "lodhi",
+    "date": {
+      "year": null,
+      "label": "Built 1517–1518; range",
+      "source": 0
+    }
+  },
+  {
+    "id": "way/44827278",
+    "expectedName": "Lotus Temple",
+    "center": [77.2586061, 28.5533633],
+    "relationship": "same building",
+    "summary": "The Bahá’í House of Worship opened in December 1986. Fariborz Sahba’s design uses 27 marble-clad petals in nine groups. This date concerns the temple building.",
+    "sources": [
+      {
+        "title": "Ministry of Tourism · Lotus Temple",
+        "url": "https://www.incredibleindia.gov.in/en/delhi/delhi/lotus-temple",
+        "checked": "2026-10-16"
+      }
+    ],
+    "landmarkId": "lotus",
+    "date": {
+      "year": 1986,
+      "label": "Opened December 1986",
+      "source": 0
+    }
+  },
+  {
+    "id": "way/400921719",
+    "expectedName": "Akshardham",
+    "center": [77.2773184, 28.6125166],
+    "relationship": "same building",
+    "summary": "The Delhi Akshardham complex opened in 2005. This reviewed link identifies the named central mandir; the date does not establish the age of every structure across the wider campus.",
+    "sources": [
+      {
+        "title": "Ministry of Tourism · Swaminarayan Akshardham",
+        "url": "https://www.incredibleindia.gov.in/en/delhi/delhi/akshardham-temple",
+        "checked": "2026-10-16"
+      }
+    ],
+    "landmarkId": "akshardham",
+    "date": {
+      "year": 2005,
+      "label": "Opened 2005",
+      "source": 0
+    }
+  },
+  {
+    "id": "way/103602249",
+    "expectedName": "Safdarjung's Tomb",
+    "center": [77.2106025, 28.5892365],
+    "relationship": "same building",
+    "summary": "Safdarjung’s garden tomb was built in 1754 for the former Mughal prime minister. The map’s original Wikipedia link describes Safdarjung the person; the Delhi Tourism source below describes his tomb.",
+    "sources": [
+      {
+        "title": "Delhi Tourism · Safdarjung’s Tomb",
+        "url": "https://delhitourism.gov.in/tourist_place/safdarjang_tomb.html",
+        "checked": "2026-10-16"
+      }
+    ],
+    "landmarkId": "safdarjung",
+    "date": {
+      "year": 1754,
+      "label": "Built 1754",
+      "source": 0
+    }
+  },
+  {
+    "id": "relation/6087635",
+    "expectedName": "Old Parliament House",
+    "center": [77.2078082, 28.6171875],
+    "relationship": "same building",
+    "summary": "The circular Old Parliament House was inaugurated in 1927 and was designed by Edwin Lutyens and Herbert Baker. It is distinct from the adjacent New Parliament House.",
+    "sources": [
+      {
+        "title": "Delhi Tourism · Historic Parliament House (legacy description)",
+        "url": "https://delhitourism.gov.in/tourist_place/parliment_house.html",
+        "checked": "2026-10-16"
+      },
+      {
+        "title": "Wikipedia · Old Parliament House, New Delhi",
+        "url": "https://en.wikipedia.org/wiki/Old_Parliament_House%2C_New_Delhi",
+        "checked": "2026-10-16"
+      }
+    ],
+    "landmarkId": "old-parliament",
+    "date": {
+      "year": 1927,
+      "label": "Inaugurated 1927",
+      "source": 0
+    }
+  },
+  {
+    "id": "way/220385654",
+    "expectedName": "Humayun's Tomb",
+    "center": [77.2506468, 28.5932856],
+    "relationship": "same building",
+    "summary": "This footprint is the main tomb of Humayun. Its original map links identify the emperor rather than the tomb. The curated architectural profile describes the garden-tomb, dated approximately to 1570; the existing OSM value of 1570 remains a contributor record.",
+    "sources": [
+      {
+        "title": "Ministry of Tourism · Humayun’s Tomb",
+        "url": "https://www.incredibleindia.gov.in/en/delhi/delhi/humayuns-tomb",
+        "checked": "2026-10-16"
+      },
+      {
+        "title": "UNESCO · Humayun’s Tomb",
+        "url": "https://whc.unesco.org/en/list/232/",
+        "checked": "Further reading; portal unavailable during this refresh"
+      },
+      {
+        "title": "ASI · Humayun’s Tomb",
+        "url": "https://asi.nic.in/pages/WorldHeritageHumayunTomb",
+        "checked": "2026-10-16"
+      },
+      {
+        "title": "Wikipedia · Humayun's Tomb",
+        "url": "https://en.wikipedia.org/wiki/Humayun%27s_Tomb",
+        "checked": "2026-10-16"
+      }
+    ],
+    "landmarkId": "humayun",
+    "date": {
+      "year": null,
+      "label": "Built circa 1570; approximate",
+      "source": 0
+    }
+  },
+  {
+    "id": "way/369140381",
+    "expectedName": "Qutb Minar",
+    "center": [77.1854501, 28.524413],
+    "relationship": "same building",
+    "summary": "The year 1199 in the site profile marks the beginning of construction. The minaret was built in phases. A construction-start milestone is not supplied as a completion year.",
+    "sources": [
+      {
+        "title": "Ministry of Tourism · Qutb Minar",
+        "url": "https://www.incredibleindia.gov.in/en/delhi/delhi/qutub-minar",
+        "checked": "2026-10-16"
+      },
+      {
+        "title": "ASI · Qutb Minar",
+        "url": "https://asi.nic.in/pages/WorldHeritageQutbMinar",
+        "checked": "2026-10-16"
+      }
+    ],
+    "landmarkId": "qutub",
+    "date": {
+      "year": null,
+      "label": "Construction began 1199; completion not assigned",
+      "source": 0
+    }
+  },
+  {
+    "id": "way/500411689",
+    "expectedName": "Agrasen ki Baoli",
+    "center": [77.2250119, 28.626024],
+    "relationship": "same building",
+    "summary": "The surviving stepwell is generally placed in the 14th–15th century. Its precise construction date is uncertain, so the approximate site milestone is not copied into the building chronology.",
+    "sources": [
+      {
+        "title": "Ministry of Tourism · Agrasen ki Baoli",
+        "url": "https://www.incredibleindia.gov.in/en/delhi/delhi/agrasen-ki-baoli",
+        "checked": "2026-10-16"
+      }
+    ],
+    "landmarkId": "agrasen",
+    "date": {
+      "year": null,
+      "label": "14th–15th century; date uncertain",
+      "source": 0
+    }
+  },
+  {
+    "id": "way/111695183",
+    "expectedName": "Gurdwara Bangla Sahib",
+    "center": [77.2090851, 28.6263078],
+    "relationship": "same building",
+    "summary": "The profile’s 1664 date refers to Guru Har Krishan’s stay in Delhi. It does not date the standing gurdwara building. The building’s completion year remains unassigned.",
+    "sources": [
+      {
+        "title": "Ministry of Tourism · Gurudwara Bangla Sahib",
+        "url": "https://www.incredibleindia.gov.in/en/delhi/delhi/gurudwara-bangla-sahib",
+        "checked": "2026-10-16"
+      },
+      {
+        "title": "Delhi Tourism · Gurudwara Bangla Sahib",
+        "url": "https://delhitourism.gov.in/tourist_place/spritual_delhi.html",
+        "checked": "2026-10-16"
+      }
+    ],
+    "landmarkId": "bangla-sahib",
+    "date": {
+      "year": null,
+      "label": "1664 visit; building date unknown",
+      "source": 0
+    }
+  },
+  {
+    "id": "relation/17080654",
+    "expectedName": "National Museum",
+    "center": [77.2196391, 28.6119151],
+    "relationship": "same building",
+    "summary": "The National Museum was established in 1949. That institutional founding date is separate from construction of the present building on Janpath and is not used as its building age.",
+    "sources": [
+      {
+        "title": "Ministry of Tourism · National Museum",
+        "url": "https://www.incredibleindia.gov.in/en/delhi/delhi/national-museum",
+        "checked": "2026-10-16"
+      },
+      {
+        "title": "Wikipedia · National Museum, New Delhi",
+        "url": "https://en.wikipedia.org/wiki/National_Museum,_New_Delhi",
+        "checked": "2026-10-16"
+      }
+    ],
+    "landmarkId": "national-museum",
+    "date": {
+      "year": null,
+      "label": "Museum established 1949; building date unverified",
+      "source": 0
+    }
+  },
+  {
+    "id": "way/369650195",
+    "expectedName": "Jaipur House",
+    "center": [77.234377, 28.6101176],
+    "relationship": "part of site",
+    "summary": "Jaipur House predates the National Gallery of Modern Art, which opened here in 1954. This link applies to Jaipur House, not to all later gallery wings. The institutional opening is not used as the palace’s construction date.",
+    "sources": [
+      {
+        "title": "Ministry of Tourism · National Gallery of Modern Art",
+        "url": "https://www.incredibleindia.gov.in/en/delhi/delhi/national-gallery-of-modern-art",
+        "checked": "2026-10-16"
+      }
+    ],
+    "landmarkId": "ngma",
+    "date": {
+      "year": null,
+      "label": "Gallery opened 1954; palace date not assigned",
+      "source": 0
+    }
+  },
+  {
+    "id": "way/80926769",
+    "expectedName": "Sacred Heart Catholic Cathedral",
+    "center": [77.2067681, 28.6286179],
+    "relationship": "same building",
+    "summary": "The cathedral profile records construction beginning in 1930. The construction-start milestone is kept separate from a verified completion date.",
+    "sources": [
+      {
+        "title": "Delhi Tourism · Sacred Heart Cathedral",
+        "url": "https://delhitourism.gov.in/tourist_place/spritual_delhi.html",
+        "checked": "2026-10-16"
+      },
+      {
+        "title": "Wikipedia · Sacred Heart Cathedral",
+        "url": "https://en.wikipedia.org/wiki/Sacred_Heart_Cathedral,_New_Delhi",
+        "checked": "Legacy reference; not revalidated in this release"
+      },
+      {
+        "title": "Wikipedia · Sacred Heart Cathedral, New Delhi",
+        "url": "https://en.wikipedia.org/wiki/Sacred_Heart_Cathedral%2C_New_Delhi",
+        "checked": "2026-10-16"
+      }
+    ],
+    "landmarkId": "sacred-heart",
+    "date": {
+      "year": null,
+      "label": "Construction began 1930; completion not assigned",
+      "source": 0
+    }
+  },
+  {
+    "id": "way/1448399385",
+    "expectedName": "Raj Ghat",
+    "center": [77.2495043, 28.6405986],
+    "relationship": "same building",
+    "summary": "Raj Ghat marks Mahatma Gandhi’s cremation site in 1948. The original map record links to Gandhi himself. The memorial-site event is not treated as a construction date for this mapped outline.",
+    "sources": [
+      {
+        "title": "Ministry of Tourism · Raj Ghat",
+        "url": "https://www.incredibleindia.gov.in/en/delhi/delhi/raj-ghat",
+        "checked": "2026-10-16"
+      }
+    ],
+    "landmarkId": "raj-ghat",
+    "date": {
+      "year": null,
+      "label": "Cremation site, 1948; not a building date",
+      "source": 0
+    }
+  }
+]

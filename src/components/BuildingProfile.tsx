@@ -6,6 +6,8 @@ import {
   footprintPerimeter,
   linkedLandmark,
   safeExternalUrl,
+  buildingEvidence,
+  buildingDate,
 } from "../lib/buildings";
 import { HERITAGE, formatNumber as fmt } from "../lib/data";
 import type { CityFeature } from "../lib/types";
@@ -89,7 +91,11 @@ export function BuildingProfile({
   const p = feature.properties;
   const tags = p.tags ?? {};
   const coords = centerOf(feature);
-  const related = linkedLandmark(feature, HERITAGE);
+  const evidence = buildingEvidence(feature);
+  const date = buildingDate(feature);
+  const related = evidence?.landmarkId
+    ? HERITAGE.find((site) => site.id === evidence.landmarkId)
+    : linkedLandmark(feature, HERITAGE);
   const nearby = useMemo(
     () =>
       HERITAGE.map((h) => ({ h, distance: distanceMeters(coords, h.coords) }))
@@ -107,6 +113,8 @@ export function BuildingProfile({
     .filter(Boolean)
     .join(", ");
   const details = [
+    ["OSM start date", p.start_date ?? "Not recorded"],
+    ["Timeline date basis", date?.basis ?? "No usable date"],
     ["Mapped address", address || "Not recorded"],
     ["Storeys", p.levels ?? "Not recorded"],
     ["Building material", tags["building:material"] ?? "Not recorded"],
@@ -126,6 +134,30 @@ export function BuildingProfile({
   const website = safeExternalUrl(tags.website);
   return (
     <section className="building-profile">
+      {evidence && (
+        <section className="reviewed-evidence">
+          <h3>Reviewed building history</h3>
+          <p>{evidence.summary}</p>
+          {evidence.date && <strong>{evidence.date.label}</strong>}
+          <p className="micro-note">
+            Matched to this named map record and location. Original map tags are
+            retained below. Dates do not describe every later alteration.
+          </p>
+          {evidence.sources.map((source) => (
+            <div key={source.url}>
+              <a
+                className="source-link"
+                href={source.url}
+                target="_blank"
+                rel="noreferrer"
+              >
+                {source.title} <ExternalLink size={13} />
+              </a>
+              <p className="micro-note">Source checked {source.checked}</p>
+            </div>
+          ))}
+        </section>
+      )}
       <LinkedReference article={tags.wikipedia} />
       {related && (
         <button
@@ -133,7 +165,13 @@ export function BuildingProfile({
           onClick={() => onHeritage(related.id)}
         >
           Read the {related.name} profile <ArrowRight size={14} />
-          <small>Matched by the same Wikidata identifier</small>
+          <small>
+            {evidence
+              ? evidence.relationship === "part of site"
+                ? "Part of this wider site · reviewed association"
+                : "Same building or memorial · reviewed association"
+              : "Matched by the same Wikidata identifier"}
+          </small>
         </button>
       )}
       <h3>Building dossier</h3>

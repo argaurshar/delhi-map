@@ -17,7 +17,7 @@ const buildings = data.features.filter((f) => f.properties.kind === "building");
 describe("Chronology and context evidence", () => {
   it("only reveals dated building footprints, not centuries, nearby landmarks or building parts", () => {
     const records = buildingDateRecords(data.features, "all", "none", null);
-    expect(records).toHaveLength(15);
+    expect(records).toHaveLength(19);
     expect(records.some((r) => r.name === "Kushak Mahal")).toBe(false);
     expect(
       records.some((r) => r.name === "Lotus Temple" && r.year === 1986),
@@ -28,7 +28,7 @@ describe("Chronology and context evidence", () => {
         .filter((r) => r.year <= 1600)
         .map((r) => r.year)
         .sort(),
-    ).toEqual([1494, 1570]);
+    ).toEqual([1444, 1494, 1541, 1570]);
   });
   it("reconciles histogram counts and context filters with the source footprints", () => {
     for (const context of [
