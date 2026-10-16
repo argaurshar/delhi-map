@@ -1,0 +1,44 @@
+{
+  "name": "delhi-atlas",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 0.0.0.0",
+    "build": "tsc -b && vite build",
+    "preview": "vite preview --host 0.0.0.0",
+    "test": "vitest run",
+    "data:refresh": ".venv/bin/python scripts/fetch_osm.py",
+    "data:archive": ".venv/bin/python scripts/fetch_osm.py --archive",
+    "test:browser": "python scripts/browser_smoke.py",
+    "format": "prettier --write src tests index.html vite.config.ts tsconfig.json package.json",
+    "format:check": "prettier --check src tests index.html vite.config.ts tsconfig.json package.json"
+  },
+  "dependencies": {
+    "@fontsource/instrument-serif": "^5.3.0",
+    "@fontsource/inter": "^5.3.0",
+    "@turf/area": "^7.3.4",
+    "@turf/bbox": "^7.3.4",
+    "@turf/boolean-intersects": "^7.3.4",
+    "@turf/boolean-valid": "^7.4.0",
+    "@turf/circle": "^7.3.4",
+    "@turf/helpers": "^7.3.4",
+    "@turf/intersect": "^7.3.4",
+    "@turf/kinks": "^7.4.0",
+    "@turf/union": "^7.3.4",
+    "lucide-react": "^0.468.0",
+    "maplibre-gl": "^5.12.0",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0"
+  },
+  "devDependencies": {
+    "@types/geojson": "^7946.0.16",
+    "@types/react": "^19.2.0",
+    "@types/react-dom": "^19.2.0",
+    "@vitejs/plugin-react": "^5.1.0",
+    "prettier": "^3.6.2",
+    "typescript": "~5.9.3",
+    "vite": "^7.3.0",
+    "vitest": "^3.2.4"
+  }
+}
