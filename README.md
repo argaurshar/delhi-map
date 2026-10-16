@@ -10,13 +10,16 @@ An interactive urban research map with animated exploration, sourced place profi
 - **24 landmark profiles** with credited local photographs, dated milestones, architectural facts, government/heritage citations and editorial spatial readings.
 - **208 linked reference summaries** associated through existing OSM Wikipedia tags. Article identity is shown separately from footprint facts.
 - Guided fly-throughs for Delhi through time, Mughal landscapes and civic institutions; pause, previous/next, speed, orbit and a replayable 3D reveal. Dragging pauses camera animation. Reduced-motion preferences are respected.
-- History lenses for Mughal, sacred, civic and water/garden sites. The timeline includes approximate dates and institutional milestones, clearly labelled.
+- Construction-date playback with synchronized year, count, histogram, growing dated footprints, pause/resume/replay, 1×/2×/4× speed, scrubbing, clickable period isolation and an undated-context toggle. Only **15 parseable building dates** participate; no ages are inferred for the remaining buildings.
+- A separate **24-site Heritage milestones** timeline includes approximate dates, construction starts and institutional openings. History lenses cover Mughal, sacred, civic and water/garden sites.
+- Six building context lenses: homes, commerce, public life, worship, historic tags and roof forms. Animated category colours, neutral surroundings, counts, descriptions and OSM attribution stay linked to the current context. An empty date chart is explicitly labelled.
+- Hover shading, persistent selection, animated detail-card entrances, smooth city-to-building camera flights, and animated marker visibility. Camera interaction pauses playback; reduced-motion settings retain static controls. Saved links preserve chronology, context, period isolation and undated visibility.
 - Footprint, use, height and recorded-date colour modes. Unknown dates stay grey; landmark dates are not applied to neighbouring buildings.
 - Building dossiers with available address, storeys, material, roof, access and other public OSM tags; calculated perimeter and coordinates; nearby context and source links.
 - Mapped building parts, streets, places, trees, landscape, water and transit. These are schematic extrusions, not detailed architectural meshes.
-- Draw/import a study polygon or create a radius, compare neighbourhood windows, inspect records, share a view and export PNG, CSV, GeoJSON or a Markdown research brief.
+- Draw/import a study polygon or create a radius, compare neighbourhood windows, inspect records, share a view and export PNG, CSV, GeoJSON or a Markdown research brief. Study calculations and data exports retain the study boundary and footprint-size filter; visual chronology/context filters are separate. PNG exports reflect the displayed map and its current palette.
 
-Only **3,562** building records have a height or storey tag and **16** have a construction-date tag. An unknown height uses a uniform **8 m visual extrusion** and is excluded from height statistics. Storey-derived heights use 3 m per storey. Names, heights and dates are not invented to fill gaps.
+Only **3,562** building records have a height or storey tag and **16** have a construction-date tag, of which **15** can be parsed as a specific year (the remaining value is a century). Dates remain contributor records, not independently verified completion years. An unknown height uses a uniform **8 m visual extrusion** and is excluded from height statistics. Storey-derived heights use 3 m per storey. Names, heights and dates are not invented to fill gaps.
 
 ## Run and validate
 
@@ -45,9 +48,10 @@ Browser checks require Python Playwright and Chromium:
 ```bash
 ATLAS_TEST_URL=http://127.0.0.1:4175/delhi-map/ python scripts/browser_smoke.py
 ATLAS_TEST_URL=http://127.0.0.1:4175/delhi-map/ python scripts/experience_smoke.py
+ATLAS_TEST_URL=http://127.0.0.1:4175/delhi-map/ python scripts/animation_smoke.py
 ```
 
-Set `CHROMIUM_PATH` and `ATLAS_TEST_OUTPUT` if necessary. The checks cover source loading, map interactions, study geometry, exports, reference profiles, tour behavior, actual orbit movement, reduced motion and mobile layouts.
+Set `CHROMIUM_PATH` and `ATLAS_TEST_OUTPUT` if necessary. The checks cover source loading, map interactions, study geometry, exports, reference profiles, tour behavior, actual orbit movement, reduced motion and mobile layouts. The animation check verifies that an actual rendered Lotus Temple footprint disappears before its recorded year and reappears at that year; it also checks hover pixels, period filters and chart reconciliation.
 
 ## Refresh data
 

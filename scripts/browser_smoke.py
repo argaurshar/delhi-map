@@ -91,13 +91,14 @@ with sync_playwright() as p:
     page.locator('.comparison-table').wait_for(timeout=90000)
     print('Browser checkpoint',page.locator('.mode-nav .active').inner_text(),flush=True)
     page.screenshot(path=str(OUT/'04-comparison.png'))
-    slider=page.get_by_role('slider',name='Heritage completion year')
+    page.get_by_role('button',name='Heritage milestones',exact=True).click()
+    slider=page.get_by_role('slider',name='Heritage milestone cutoff')
     slider.fill('1650')
-    page.wait_for_function('document.querySelector(".timeline-year strong").textContent === "1650"')
-    assert page.locator('.heritage-marker:visible').count()==8
-    page.get_by_role('button',name='Play heritage timeline',exact=True).click()
-    page.wait_for_function('Number(document.querySelector(".timeline-year strong").textContent) > 1650')
-    page.get_by_role('button',name='Pause heritage timeline',exact=True).click()
+    page.wait_for_function('document.querySelector(".chronology-counter strong").textContent === "1650"')
+    assert page.locator('.heritage-marker:not(.marker-hidden)').count()==8
+    page.get_by_role('button',name='Play chronology',exact=True).click()
+    page.wait_for_function('Number(document.querySelector(".chronology-counter strong").textContent) > 1650')
+    page.get_by_role('button',name='Pause chronology',exact=True).click()
     page.get_by_role('button',name='Share this view',exact=True).click()
     shared=page.get_by_role('textbox',name='View link').input_value()
     assert '#view=' in shared

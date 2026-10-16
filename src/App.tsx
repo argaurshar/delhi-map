@@ -7,7 +7,6 @@ import {
   Check,
   ChevronDown,
   ChevronRight,
-  CircleHelp,
   Copy,
   ExternalLink,
   FileJson,
@@ -19,8 +18,6 @@ import {
   MapPin,
   MousePointer2,
   MoveUpRight,
-  Pause,
-  Play,
   Ruler,
   Search,
   Share2,
@@ -39,6 +36,22 @@ import turfArea from "@turf/area";
 import bbox from "@turf/bbox";
 import circle from "@turf/circle";
 import { MapView, type MapHandle } from "./components/MapView";
+import { Chronology } from "./components/Chronology";
+import { ContextPanel } from "./components/ContextPanel";
+import {
+  CONTEXTS,
+  advanceYear,
+  buildingDateRecords,
+  contextCategory,
+  milestoneRecords,
+  PERIODS,
+  FIRST_YEAR,
+  LAST_YEAR,
+  type ContextId,
+  type PeriodId,
+  type TimelineMode,
+} from "./lib/chronology";
+import { recordedYear } from "./lib/buildings";
 import { CinematicControls } from "./components/CinematicControls";
 import { HeritagePhoto, HeritageDetails } from "./components/HeritageProfile";
 import { BuildingProfile } from "./components/BuildingProfile";
@@ -151,7 +164,7 @@ export default function App() {
   const [layers, setLayers] = useState<Layers>(
     initial?.layers ?? DEFAULT_LAYERS,
   );
-  const [theme, setTheme] = useState<Theme>(initial?.theme ?? "footprint");
+  const [theme, setTheme] = useState<Theme>(initial?.theme ?? "era");
   const [size, setSize] = useState<SizeFilter>(initial?.size ?? "all");
   const [area, setArea] = useState<StudyArea | null>(initial?.area ?? null);
   const [areaName, setAreaName] = useState(initial?.areaName ?? "Whole pilot");
@@ -161,6 +174,53 @@ export default function App() {
   const [motionInterrupt, setMotionInterrupt] = useState(0);
   const [directoryOpen, setDirectoryOpen] = useState(false);
   const [playing, setPlaying] = useState(false);
+  const [timelineMode, setTimelineMode] = useState<TimelineMode>(
+    initial?.timelineMode ?? "buildings",
+  );
+  const [context, setContext] = useState<ContextId>(initial?.context ?? "none");
+  const [period, setPeriod] = useState<PeriodId | null>(
+    initial?.period ?? null,
+  );
+  const [showUnknown, setShowUnknown] = useState(initial?.showUnknown ?? true);
+  const [speed, setSpeed] = useState(1);
+  const [reduced, setReduced] = useState(
+    window.matchMedia("(prefers-reduced-motion: reduce)").matches,
+  );
+  const sizeFeatures = useMemo(
+    () =>
+      data?.features.filter(
+        (f) =>
+          f.properties.kind === "building" && matchesSize(f.properties, size),
+      ) ?? [],
+    [data, size],
+  );
+  const datedRecords = useMemo(
+    () => buildingDateRecords(sizeFeatures, "all", context, period),
+    [sizeFeatures, context, period],
+  );
+  const siteRecords = useMemo(
+    () =>
+      milestoneRecords(
+        HERITAGE.filter((h) => lens === "all" || h.lenses?.includes(lens)),
+      ),
+    [lens],
+  );
+  const dateCoverage = useMemo(() => {
+    const matched = sizeFeatures.filter((f) => contextCategory(f, context));
+    return {
+      total: matched.length,
+      unknown: matched.filter(
+        (f) => recordedYear(f.properties.start_date) === null,
+      ).length,
+    };
+  }, [sizeFeatures, context]);
+  const periodCounts = useMemo(
+    () =>
+      PERIODS.map(
+        (p) => buildingDateRecords(sizeFeatures, "all", "none", p.id).length,
+      ),
+    [sizeFeatures],
+  );
   const [modal, setModal] = useState<
     "sources" | "export" | "table" | "share" | null
   >(null);
@@ -257,20 +317,80 @@ export default function App() {
     return () => controller.abort();
   }, [notify]);
   useEffect(() => {
-    if (!playing) return;
-    const t = setInterval(
-      () =>
-        setYear((y) => {
-          if (y >= 2026) {
-            setPlaying(false);
-            return 2026;
-          }
-          return Math.min(2026, y + 10);
-        }),
-      180,
+    if (!playing || reduced) return;
+    const timer = window.setInterval(
+      () => setYear((y) => advanceYear(y, speed)),
+      100,
     );
-    return () => clearInterval(t);
-  }, [playing]);
+    return () => clearInterval(timer);
+  }, [playing, speed, reduced]);
+  useEffect(() => {
+    if (year >= LAST_YEAR) setPlaying(false);
+  }, [year]);
+  useEffect(() => {
+    const preference = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const change = () => {
+      setReduced(preference.matches);
+      if (preference.matches) setPlaying(false);
+    };
+    const hide = () => {
+      if (document.hidden) setPlaying(false);
+    };
+    preference.addEventListener("change", change);
+    document.addEventListener("visibilitychange", hide);
+    return () => {
+      preference.removeEventListener("change", change);
+      document.removeEventListener("visibilitychange", hide);
+    };
+  }, []);
+  useEffect(() => {
+    if (modal || drawMode) setPlaying(false);
+  }, [modal, drawMode]);
+  function changeYear(value: number) {
+    setMotionInterrupt((i) => i + 1);
+    setPlaying(false);
+    setYear(value);
+    setSelected(null);
+  }
+  function changeTimeline(value: TimelineMode) {
+    setMotionInterrupt((i) => i + 1);
+    setPlaying(false);
+    setYear(LAST_YEAR);
+    setSelected(null);
+    setTimelineMode(value);
+    if (value === "buildings") {
+      setTheme("era");
+      setLayers((l) => ({ ...l, buildings: true }));
+    } else {
+      setPeriod(null);
+      setLayers((l) => ({ ...l, heritage: true }));
+    }
+  }
+  function changeContext(value: ContextId) {
+    setMotionInterrupt((i) => i + 1);
+    setPlaying(false);
+    setYear(LAST_YEAR);
+    setSelected(null);
+    setContext(value);
+    setPeriod(null);
+    setTimelineMode("buildings");
+    setLayers((l) => ({ ...l, buildings: true }));
+    if (value !== "none") map.current?.overview();
+  }
+  function playChronology(replay = false) {
+    setMotionInterrupt((i) => i + 1);
+    setSelected(null);
+    if (replay || !playing) {
+      if (replay || year >= LAST_YEAR) setYear(FIRST_YEAR);
+      setLayers((l) => ({
+        ...l,
+        [timelineMode === "buildings" ? "buildings" : "heritage"]: true,
+      }));
+      if (timelineMode === "buildings") setTheme("era");
+      map.current?.overview();
+      setPlaying(true);
+    } else setPlaying(false);
+  }
   useEffect(() => {
     const handle = (e: KeyboardEvent) => {
       if (e.key === "Escape" && !document.querySelector('[role="dialog"]')) {
@@ -353,19 +473,40 @@ export default function App() {
   const featureSelection =
     selected && "properties" in selected ? selected : null;
   function selectHeritage(id: string, fromTour = false) {
-    if (!fromTour) setMotionInterrupt((i) => i + 1);
     setPlaying(false);
+    if (fromTour) {
+      setTimelineMode("heritage");
+      setContext("none");
+      setPeriod(null);
+    }
+    if (!fromTour) setMotionInterrupt((i) => i + 1);
     if (window.innerWidth < 900) setPanelOpen(false);
     const h = HERITAGE.find((h) => h.id === id)!;
     setLens("all");
     setSelected(h);
     setLayers((l) => ({ ...l, heritage: true }));
-    setYear((y) => (fromTour ? h.year : Math.max(y, h.year)));
+    setPeriod(null);
+    setShowUnknown(true);
+    setYear((y) =>
+      fromTour
+        ? h.year
+        : timelineMode === "buildings"
+          ? LAST_YEAR
+          : Math.max(y, h.year),
+    );
     map.current?.flyTo(h.coords, 16.1);
     setQuery("");
     setSearching(false);
   }
   function selectFeature(feature: CityFeature, fly = false) {
+    setPlaying(false);
+    const date = recordedYear(feature.properties.start_date);
+    if (date !== null) setYear((y) => Math.max(y, date));
+    if (fly) {
+      setPeriod(null);
+      setShowUnknown(true);
+      setContext("none");
+    }
     if (window.innerWidth < 900) setPanelOpen(false);
     setMotionInterrupt((i) => i + 1);
     setSelected(feature);
@@ -445,6 +586,10 @@ export default function App() {
       layers,
       lens,
       year,
+      timelineMode,
+      context,
+      period,
+      showUnknown,
       mode,
       area,
       areaName,
@@ -527,7 +672,11 @@ export default function App() {
         ctx.scale(ratio, ratio);
         ctx.drawImage(source, 0, 0, exportWidth, exportHeight);
         if (layers.heritage)
-          for (const h of HERITAGE.filter((h) => h.year <= year)) {
+          for (const h of HERITAGE.filter(
+            (h) =>
+              (timelineMode !== "heritage" || h.year <= year) &&
+              (lens === "all" || h.lenses?.includes(lens)),
+          )) {
             const p = map.current?.project(h.coords);
             if (!p) continue;
             ctx.beginPath();
@@ -553,36 +702,47 @@ export default function App() {
           y + 80,
         );
         ctx.fillText(
-          `${map.current?.camera()?.pitch ? "3D perspective — no uniform scale" : "2D map"} · Heritage: curated points through ${year} · Study calculations clipped to pilot`,
+          `${map.current?.camera()?.pitch ? "3D perspective — no uniform scale" : "2D map"} · ${timelineMode === "buildings" ? "Recorded building dates" : "Site milestones"} through ${year} · Context: ${context} · Period: ${period ?? "all"} · Undated: ${showUnknown ? "shown" : "hidden"}`,
           24,
           y + 102,
         );
+        const activeContext = CONTEXTS.find((c) => c.id === context)!;
         const legend =
-          theme === "footprint"
-            ? labels
-            : theme === "use"
-              ? [
-                  "Commercial",
-                  "Residential",
-                  "Religious",
-                  "Institutional / transit",
-                  "Unknown / other",
-                ]
-              : theme === "era"
+          context !== "none"
+            ? [...activeContext.categories.map((c) => c[1]), "Other buildings"]
+            : theme === "footprint"
+              ? labels
+              : theme === "use"
                 ? [
-                    "Before 1700",
-                    "1700–1946",
-                    "1947–1999",
-                    "2000 onward",
-                    "Unrecorded date",
+                    "Commercial",
+                    "Residential",
+                    "Religious",
+                    "Institutional / transit",
+                    "Unknown / other",
                   ]
-                : ["Under 10 m", "10–20 m", "20–40 m", "Over 40 m", "Unknown"];
+                : theme === "era"
+                  ? [
+                      "Before 1700",
+                      "1700–1946",
+                      "1947–1999",
+                      "2000 onward",
+                      "Unrecorded date",
+                    ]
+                  : [
+                      "Under 10 m",
+                      "10–20 m",
+                      "20–40 m",
+                      "Over 40 m",
+                      "Unknown",
+                    ];
         const exportColours =
-          theme === "use"
-            ? ["#c89854", "#7b9585", "#bd7d62", "#607d89", "#c9c7b9"]
-            : theme === "era"
-              ? ["#9d5d55", "#c28b53", "#6e9989", "#6b8caf", "#bfc4be"]
-              : [...colours, "#c9c7b9"];
+          context !== "none"
+            ? [...activeContext.categories.map((c) => c[2]), "#e0dfd7"]
+            : theme === "use"
+              ? ["#c89854", "#7b9585", "#bd7d62", "#607d89", "#c9c7b9"]
+              : theme === "era"
+                ? ["#9d5d55", "#c28b53", "#6e9989", "#6b8caf", "#bfc4be"]
+                : [...colours, "#c9c7b9"];
         legend.forEach((l, i) => {
           ctx.fillStyle = exportColours[i];
           ctx.fillRect(
@@ -711,7 +871,14 @@ export default function App() {
             ref={map}
             data={data}
             lens={lens}
-            onMotionInterrupted={() => setMotionInterrupt((i) => i + 1)}
+            timelineMode={timelineMode}
+            context={context}
+            period={period}
+            showUnknown={showUnknown}
+            onMotionInterrupted={() => {
+              setMotionInterrupt((i) => i + 1);
+              setPlaying(false);
+            }}
             layers={layers}
             theme={theme}
             size={size}
@@ -851,6 +1018,11 @@ export default function App() {
               </button>
             ))}
           </div>
+          <ContextPanel
+            context={context}
+            onContext={changeContext}
+            features={sizeFeatures}
+          />
           <section className="heritage-lenses">
             <div className="section-heading">
               <span>HISTORY LENSES</span>
@@ -871,6 +1043,9 @@ export default function App() {
                   className={lens === id ? "active" : ""}
                   onClick={() => {
                     setLens(id);
+                    setSelected(null);
+                    setPlaying(false);
+                    setYear(LAST_YEAR);
                     setLayers((l) => ({ ...l, heritage: true }));
                   }}
                 >
@@ -911,8 +1086,12 @@ export default function App() {
               {(["footprint", "use", "height", "era"] as Theme[]).map((t) => (
                 <button
                   key={t}
-                  className={theme === t ? "active" : ""}
-                  onClick={() => setTheme(t)}
+                  className={context === "none" && theme === t ? "active" : ""}
+                  onClick={() => {
+                    setTheme(t);
+                    setContext("none");
+                    if (t !== "era") setPeriod(null);
+                  }}
                 >
                   {t === "footprint"
                     ? "Footprint"
@@ -924,47 +1103,93 @@ export default function App() {
                 </button>
               ))}
             </div>
-            <div className="legend">
-              {(theme === "footprint"
-                ? labels
-                : theme === "use"
-                  ? [
-                      "Commercial / markets",
-                      "Residential",
-                      "Religious",
-                      "Institutional / transit",
-                    ]
-                  : theme === "era"
-                    ? ["Before 1700", "1700–1946", "1947–1999", "2000 onward"]
-                    : ["Under 10 m", "10–20 m", "20–40 m", "Over 40 m"]
-              ).map((label, i) => (
-                <div key={label}>
-                  <span
-                    className="swatch"
-                    style={{
-                      background:
-                        theme === "use"
-                          ? ["#c89854", "#7b9585", "#bd7d62", "#607d89"][i]
-                          : theme === "era"
-                            ? ["#9d5d55", "#c28b53", "#6e9989", "#6b8caf"][i]
-                            : colours[i],
-                    }}
-                  />
-                  <span>{label}</span>
-                  {theme === "footprint" && (
-                    <small>
-                      {analysis.result ? fmt(analysis.result.bins[i]) : "—"}
-                    </small>
-                  )}
-                </div>
-              ))}
-              {theme !== "footprint" && (
-                <div>
-                  <span className="swatch" style={{ background: "#c9c7b9" }} />
-                  <span>Unknown / other</span>
-                </div>
-              )}
-            </div>
+            {context !== "none" && (
+              <p className="micro-note">
+                The active context uses its own palette above. Choose a colour
+                mode to leave this context.
+              </p>
+            )}
+            {context === "none" && (
+              <div className="legend">
+                {theme === "era" ? (
+                  PERIODS.map((p, i) => (
+                    <button
+                      className="period-row"
+                      key={p.id}
+                      aria-pressed={period === p.id}
+                      onClick={() => {
+                        setPeriod(period === p.id ? null : p.id);
+                        setContext("none");
+                        setTimelineMode("buildings");
+                        setYear(LAST_YEAR);
+                        setPlaying(false);
+                        setSelected(null);
+                        setMotionInterrupt((v) => v + 1);
+                        setLayers((l) => ({ ...l, buildings: true }));
+                      }}
+                    >
+                      <span
+                        className="swatch"
+                        style={{ background: p.color }}
+                      />
+                      <span>{p.label}</span>
+                      <small>{periodCounts[i]}</small>
+                    </button>
+                  ))
+                ) : (
+                  <>
+                    {(theme === "footprint"
+                      ? labels
+                      : theme === "use"
+                        ? [
+                            "Commercial / markets",
+                            "Residential",
+                            "Religious",
+                            "Institutional / transit",
+                          ]
+                        : ["Under 10 m", "10–20 m", "20–40 m", "Over 40 m"]
+                    ).map((label, i) => (
+                      <div key={label}>
+                        <span
+                          className="swatch"
+                          style={{
+                            background:
+                              theme === "use"
+                                ? ["#c89854", "#7b9585", "#bd7d62", "#607d89"][
+                                    i
+                                  ]
+                                : colours[i],
+                          }}
+                        />
+                        <span>{label}</span>
+                        {theme === "footprint" && (
+                          <small>
+                            {analysis.result
+                              ? fmt(analysis.result.bins[i])
+                              : "—"}
+                          </small>
+                        )}
+                      </div>
+                    ))}
+                  </>
+                )}
+                {theme === "era" && (
+                  <p className="micro-note">
+                    Click a period to isolate dated buildings. Click it again to
+                    restore all periods.
+                  </p>
+                )}
+                {theme !== "footprint" && (
+                  <div>
+                    <span
+                      className="swatch"
+                      style={{ background: "#c9c7b9" }}
+                    />
+                    <span>Unknown / other</span>
+                  </div>
+                )}
+              </div>
+            )}
             <label className="field-label" htmlFor="footprint-filter">
               Footprint filter
             </label>
@@ -1018,7 +1243,7 @@ export default function App() {
               {manifest?.snapshot.slice(0, 4)} OSM
             </span>
             <span className="live-dot" />
-            {fmt(visibleCount)} footprints
+            {fmt(visibleCount)} dataset footprints
             <span className="caption-divider" />
             Uniform 8 m where height unknown
           </div>
@@ -1062,7 +1287,15 @@ export default function App() {
             </button>
           </div>
         )}
-        <aside className="right-panel panel" aria-label="Research inspector">
+        <aside
+          key={
+            heritageSelection?.id ??
+            featureSelection?.properties.id ??
+            "overview"
+          }
+          className={`right-panel panel ${selected ? "has-selection" : ""}`}
+          aria-label="Research inspector"
+        >
           {selected ? (
             <>
               <div className="inspector-top">
@@ -1490,85 +1723,25 @@ export default function App() {
               </button>
             ))}
           </div>
-          <div className="timeline-panel panel">
-            <button
-              className={`play-button ${playing ? "playing" : ""}`}
-              disabled={!layers.heritage}
-              aria-label={
-                playing ? "Pause heritage timeline" : "Play heritage timeline"
-              }
-              onClick={() => {
-                setMotionInterrupt((i) => i + 1);
-                if (year >= 2026) setYear(1190);
-                if (!playing) setSelected(null);
-                setPlaying(!playing);
-              }}
-            >
-              {playing ? <Pause size={16} /> : <Play size={16} />}
-            </button>
-            <div className="timeline-caption">
-              <strong>Heritage milestones</strong>
-              <span>
-                {layers.heritage
-                  ? `${HERITAGE.filter((h) => h.year <= year && (lens === "all" || h.lenses?.includes(lens))).length} / ${HERITAGE.length} sites · dates vary`
-                  : "Enable the heritage layer"}
-              </span>
-            </div>
-            <div className="timeline-track">
-              <div className="timeline-bars" aria-hidden="true">
-                {HERITAGE.map((h) => (
-                  <span
-                    key={h.id}
-                    className={h.year <= year ? "lit" : ""}
-                    style={{
-                      left: `${((h.year - 1190) / 836) * 100}%`,
-                      height: "24px",
-                    }}
-                  />
-                ))}
-              </div>
-              <input
-                type="range"
-                min="1190"
-                max="2026"
-                step="1"
-                value={year}
-                disabled={!layers.heritage}
-                aria-label="Heritage completion year"
-                onChange={(e) => {
-                  setMotionInterrupt((i) => i + 1);
-                  setYear(Number(e.target.value));
-                  setPlaying(false);
-                  if (
-                    heritageSelection &&
-                    heritageSelection.year > Number(e.target.value)
-                  )
-                    setSelected(null);
-                }}
-              />
-              <div className="timeline-ticks">
-                <span>1190</span>
-                <span>1500</span>
-                <span>1800</span>
-                <span>2026</span>
-              </div>
-            </div>
-            <div className="timeline-year">
-              <strong>{year}</strong>
-              <span>milestones by</span>
-            </div>
-            <button
-              className="icon-button timeline-info"
-              title="About the timeline"
-              aria-label="About the timeline"
-              onClick={() => {
-                setModal("sources");
-                setPlaying(false);
-              }}
-            >
-              <CircleHelp size={17} />
-            </button>
-          </div>
+          <Chronology
+            mode={timelineMode}
+            onMode={changeTimeline}
+            year={year}
+            onYear={changeYear}
+            records={timelineMode === "buildings" ? datedRecords : siteRecords}
+            total={dateCoverage.total}
+            unknown={dateCoverage.unknown}
+            playing={playing}
+            onPlay={() => playChronology()}
+            onReplay={() => playChronology(true)}
+            speed={speed}
+            onSpeed={setSpeed}
+            showUnknown={showUnknown}
+            onUnknown={setShowUnknown}
+            ready={mapReady}
+            reduced={reduced}
+            onInfo={() => setModal("sources")}
+          />
           <div className="map-footer">
             <span>
               © OpenStreetMap contributors · ODbL · Snapshot{" "}
@@ -1710,15 +1883,20 @@ export default function App() {
           <div className="source-card">
             <h3>Heritage is a separate editorial layer</h3>
             <p>
-              Seven approximate place markers link to their cited sources. Dates
-              describe completion or construction of the named site, not every
-              footprint nearby. The timeline filters {HERITAGE.length} curated
-              sites and includes approximate dates and institutional milestones,
-              as labelled in each profile. It does not reconstruct historical
-              Delhi. The Date colour mode uses only OSM construction dates;
-              unrecorded dates stay grey. Profiles cite ASI, Ministry of
-              Tourism, Delhi Tourism and secondary sources. Architectural
-              readings are editorial interpretation.
+              {HERITAGE.length} curated place markers link to their cited
+              sources. Dates describe completion or construction of the named
+              site, not every footprint nearby. The Heritage milestones timeline
+              filters {HERITAGE.length} curated sites and includes approximate
+              dates and institutional milestones, as labelled in each profile.
+              It does not reconstruct historical Delhi. Building dates playback
+              and the Date colour mode use only parseable OSM start dates, as
+              recorded, rather than independently verified completion years;
+              unrecorded dates stay neutral in Date mode and can be hidden with
+              Undated context. Context colours classify recorded tags and do not
+              imply age. The timeline chart counts matching records across the
+              urban core, independently of the study-area analysis. Profiles
+              cite ASI, Ministry of Tourism, Delhi Tourism and secondary
+              sources. Architectural readings are editorial interpretation.
             </p>
           </div>
           <div className="source-card">
@@ -1805,7 +1983,9 @@ export default function App() {
           <p className="micro-note">
             Dataset: {manifest?.id}. Footprint filter: {size}. Map images
             include contextual buildings outside your study area. Data exports
-            contain only matching buildings inside it.
+            contain buildings matching the study boundary and footprint-size
+            filter. Timeline, period and context filters affect the map image,
+            not the research dataset.
           </p>
           {exportBusy && (
             <p role="status">

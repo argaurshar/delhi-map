@@ -2584,3 +2584,409 @@ td a {
   font-size: 12px;
   line-height: 1.8;
 }
+
+/* Linked chronology and thematic map transitions. */
+.building-context {
+  padding: 0 20px 18px;
+  border-bottom: 1px solid var(--line);
+}
+.building-context .section-heading {
+  padding-left: 0;
+  padding-right: 0;
+}
+.context-catalogue {
+  display: grid;
+  gap: 3px;
+}
+.context-catalogue button,
+.period-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  text-align: left;
+  background: transparent;
+  border-radius: 5px;
+  padding: 8px 5px;
+  color: #415a4d;
+  font-size: 11px;
+  transition: background 0.18s;
+}
+.context-catalogue button:hover,
+.period-row:hover {
+  background: #e9eee2;
+}
+.context-catalogue button small,
+.period-row small {
+  margin-left: auto;
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+  color: #677568;
+}
+.period-row[aria-pressed="true"] {
+  background: #e3ebdb;
+  box-shadow: inset 2px 0 #315f52;
+}
+.context-back {
+  font-size: 10px;
+  color: #315f52;
+  background: transparent;
+  padding: 4px 0 10px;
+}
+.context-description {
+  animation: inspector-enter 0.3s ease-out;
+}
+.context-description h3 {
+  font-family: "Instrument Serif", serif;
+  font-size: 25px;
+  font-weight: 400;
+  margin: 3px 0 8px;
+}
+.context-description p {
+  font-size: 11px;
+  line-height: 1.65;
+  color: #697568;
+}
+.context-description a {
+  font-size: 10px;
+  color: #315f52;
+  text-decoration: underline;
+}
+.context-legend {
+  display: grid;
+  gap: 8px;
+  margin: 15px 0;
+}
+.context-legend > div {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  font-size: 10px;
+}
+.context-legend i {
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+}
+.context-legend small {
+  margin-left: auto;
+  font-variant-numeric: tabular-nums;
+}
+.chronology {
+  padding: 11px 18px 9px;
+}
+.chronology-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  margin-bottom: 9px;
+}
+.chronology-tabs {
+  display: flex;
+  gap: 2px;
+  border-radius: 6px;
+  background: #ecefe5;
+  padding: 3px;
+}
+.chronology-tabs button {
+  padding: 6px 9px;
+  background: transparent;
+  border-radius: 4px;
+  font-size: 11px;
+  color: #6e7969;
+}
+.chronology-tabs button[aria-pressed="true"] {
+  background: #315749;
+  color: #fff;
+}
+.unknown-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 10px;
+  color: #657260;
+  cursor: pointer;
+}
+.unknown-toggle input {
+  accent-color: #315749;
+}
+.chronology-info {
+  margin-left: auto;
+}
+.chronology-main {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.chronology-transport {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+.chronology-transport select {
+  width: 43px;
+  border: 0;
+  background: transparent;
+  font-size: 11px;
+  color: #315749;
+}
+.chronology-transport .icon-button {
+  width: 28px;
+  height: 32px;
+}
+.chronology-plot {
+  position: relative;
+  flex: 1;
+  min-width: 60px;
+  height: 70px;
+}
+.chronology-plot svg {
+  display: block;
+  width: 100%;
+  height: 48px;
+  overflow: visible;
+}
+.chronology-plot svg g {
+  transition: opacity 0.2s;
+}
+.chronology-plot input {
+  display: block;
+  appearance: none;
+  width: 100%;
+  height: 3px;
+  background: #d7ddcd;
+  margin: 0;
+  cursor: ew-resize;
+}
+.chronology-plot input::-webkit-slider-thumb {
+  appearance: none;
+  width: 12px;
+  height: 12px;
+  border: 2px solid white;
+  background: #315749;
+  border-radius: 50%;
+  box-shadow: 0 0 0 1px #315749;
+}
+.chronology-plot input::-moz-range-thumb {
+  width: 10px;
+  height: 10px;
+  border: 2px solid white;
+  background: #315749;
+  border-radius: 50%;
+}
+.chronology-ticks {
+  position: relative;
+  height: 17px;
+  font-size: 9px;
+  color: #74816f;
+  margin-top: 8px;
+}
+.chronology-ticks span {
+  position: absolute;
+  transform: translateX(-50%);
+}
+.chronology-ticks span:first-child {
+  left: 0;
+  transform: none;
+}
+.chronology-ticks span:last-child {
+  right: 0;
+  transform: none;
+}
+.chronology-counter {
+  text-align: right;
+  min-width: 160px;
+  font-variant-numeric: tabular-nums;
+}
+.chronology-counter strong {
+  display: block;
+  font-size: 34px;
+  line-height: 1;
+  font-weight: 500;
+  letter-spacing: -1.5px;
+  color: #315749;
+}
+.chronology-counter span {
+  display: block;
+  font-size: 10px;
+  color: #6b7765;
+  margin-top: 7px;
+}
+.chronology-note {
+  margin: 7px 0 0;
+  font-size: 10px;
+  color: #687560;
+  line-height: 1.45;
+}
+.heritage-marker {
+  transition:
+    opacity 0.35s,
+    visibility 0.35s;
+}
+.heritage-marker.marker-hidden {
+  opacity: 0;
+  visibility: hidden;
+}
+.has-selection {
+  animation: inspector-enter 0.28s ease-out;
+}
+@keyframes inspector-enter {
+  from {
+    opacity: 0;
+    translate: 0 8px;
+  }
+  to {
+    opacity: 1;
+    translate: 0 0;
+  }
+}
+/* Keep the taller timeline clear of the map and both inspectors. */
+.left-panel {
+  bottom: 240px;
+}
+.right-panel {
+  max-height: calc(100% - 340px);
+}
+.map-controls {
+  bottom: 250px;
+}
+.maplibregl-ctrl-bottom-left {
+  bottom: 230px;
+}
+@media (max-width: 900px) {
+  .chronology {
+    padding: 9px 12px;
+  }
+  .chronology-toolbar {
+    gap: 8px;
+  }
+  .chronology-tabs button {
+    font-size: 10px;
+    padding: 6px;
+  }
+  .chronology-counter {
+    min-width: 128px;
+  }
+  .chronology-counter strong {
+    font-size: 30px;
+  }
+  .chronology-counter span {
+    font-size: 9px;
+  }
+  .chronology-note {
+    font-size: 9px;
+  }
+  .left-panel {
+    bottom: 250px;
+    max-height: calc(100% - 310px);
+  }
+}
+@media (max-width: 600px) {
+  .chronology-toolbar {
+    gap: 4px;
+    margin-bottom: 6px;
+    flex-wrap: wrap;
+  }
+  .chronology-tabs button {
+    font-size: 9px;
+    padding: 7px 6px;
+  }
+  .unknown-toggle {
+    font-size: 9px;
+    gap: 3px;
+  }
+  .chronology-info {
+    width: 23px;
+    height: 26px;
+  }
+  .chronology-main {
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .chronology-transport {
+    order: 0;
+  }
+  .chronology-counter {
+    order: 1;
+    margin-left: auto;
+    min-width: 0;
+  }
+  .chronology-counter strong {
+    font-size: 25px;
+  }
+  .chronology-counter span {
+    font-size: 9px;
+  }
+  .chronology-plot {
+    order: 2;
+    flex-basis: 100%;
+    height: 55px;
+  }
+  .chronology-plot svg {
+    height: 35px;
+  }
+  .chronology-ticks {
+    font-size: 8px;
+    margin-top: 7px;
+  }
+  .chronology-note {
+    font-size: 8px;
+    line-height: 1.4;
+    margin-top: 6px;
+  }
+  .right-panel {
+    bottom: 270px;
+    max-height: 30vh;
+  }
+  .left-panel {
+    bottom: 270px;
+    max-height: calc(100% - 330px);
+  }
+  .map-controls {
+    bottom: 280px;
+  }
+  .maplibregl-ctrl-bottom-left {
+    bottom: 258px;
+  }
+  .cinema.open ~ .right-panel {
+    max-height: 170px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .has-selection,
+  .context-description {
+    animation: none;
+  }
+  .heritage-marker,
+  .chronology-plot svg g,
+  .period-row,
+  .context-catalogue button {
+    transition: none;
+  }
+}
+.chronology-empty {
+  position: absolute;
+  left: 10px;
+  top: 12px;
+  color: #77816f;
+  font-size: 11px;
+}
+@media (max-width: 600px) {
+  .chronology-empty {
+    top: 3px;
+    font-size: 9px;
+  }
+}
+@media (min-width: 901px) {
+  .right-panel {
+    max-height: calc(100% - 390px);
+  }
+}
+@media (max-width: 600px) {
+  .map-controls {
+    top: 110px;
+    bottom: auto;
+    flex-direction: column;
+  }
+}

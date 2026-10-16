@@ -1,3 +1,4 @@
+import type { ContextId, PeriodId, TimelineMode } from "./chronology";
 import type {
   Feature,
   FeatureCollection,
@@ -101,6 +102,10 @@ export interface SavedView {
   layers: Layers;
   lens?: HeritageLens;
   year: number;
+  timelineMode?: TimelineMode;
+  context?: ContextId;
+  period?: PeriodId | null;
+  showUnknown?: boolean;
   mode: Mode;
   area: StudyArea | null;
   areaName: string;

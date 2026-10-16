@@ -9,7 +9,6 @@ import maplibregl, {
   type Map as LibreMap,
   type GeoJSONSource,
   type ExpressionSpecification,
-  type FilterSpecification,
 } from "maplibre-gl";
 import type { FeatureCollection } from "geojson";
 import { Compass, Home, Minus, Plus, Box, Map as MapIcon } from "lucide-react";
@@ -23,10 +22,20 @@ import type {
   SizeFilter,
   HeritageLens,
 } from "../lib/types";
+import {
+  CONTEXTS,
+  PERIODS,
+  contextCategory,
+  inPeriod,
+  type ContextId,
+  type PeriodId,
+  type TimelineMode,
+} from "../lib/chronology";
 import { recordedYear } from "../lib/buildings";
 import { HERITAGE, PILOT } from "../lib/data";
 
 export interface MapHandle {
+  overview: () => void;
   cinematic: (center: [number, number], zoom?: number) => void;
   startOrbit: () => void;
   stopOrbit: () => void;
@@ -40,6 +49,10 @@ export interface MapHandle {
 interface Props {
   data: CityData;
   lens: HeritageLens;
+  timelineMode: TimelineMode;
+  context: ContextId;
+  period: PeriodId | null;
+  showUnknown: boolean;
   onMotionInterrupted: () => void;
   layers: Layers;
   theme: Theme;
@@ -139,6 +152,15 @@ export const MapView = forwardRef<MapHandle, Props>(
     const [ready, setReady] = useState(false);
     const [is3d, set3d] = useState((props.initialCamera?.pitch ?? 48) > 0);
     const [error, setError] = useState("");
+    const hoverId = useRef<string | null>(null);
+    const previousSelection = useRef<string | null>(null);
+    const colourFrame = useRef(0),
+      dateFrame = useRef(0);
+    const colourTarget = useRef<ExpressionSpecification>(era);
+    const dated = useRef<{ id: string; year: number }[]>([]);
+    const shownDates = useRef(new Set<string>());
+    const temporalKey = useRef("");
+    const updateLabels = useRef<() => void>(() => {});
     const orbitFrame = useRef(0),
       revealFrame = useRef(0);
     const reduced = () =>
@@ -157,17 +179,38 @@ export const MapView = forwardRef<MapHandle, Props>(
       const tick = (time: number) => {
         const progress = Math.min(1, (time - start) / 1800);
         const eased = 1 - Math.pow(1 - progress, 3);
-        m.setPaintProperty("buildings", "fill-extrusion-height", [
-          "*",
-          ["coalesce", ["get", "height_m"], 8],
-          eased,
-        ]);
+        for (const id of ["buildings", "building-parts"]) {
+          m.setPaintProperty(id, "fill-extrusion-height", [
+            "*",
+            ["coalesce", ["get", "height_m"], 8],
+            ["coalesce", ["feature-state", "appearance"], 1],
+            eased,
+          ]);
+          if (id === "building-parts")
+            m.setPaintProperty(id, "fill-extrusion-base", [
+              "*",
+              ["coalesce", ["get", "min_height_m"], 0],
+              eased,
+            ]);
+        }
         if (progress < 1) revealFrame.current = requestAnimationFrame(tick);
       };
       revealFrame.current = requestAnimationFrame(tick);
     };
     const markers = useRef<{ id: string; marker: maplibregl.Marker }[]>([]);
     useImperativeHandle(ref, () => ({
+      overview() {
+        stopMotion();
+        mapRef.current?.flyTo({
+          center: [77.2275, 28.6],
+          zoom: 12.4,
+          pitch: 45,
+          bearing: -17,
+          duration: reduced() ? 0 : 1800,
+          essential: false,
+          padding: { left: 0, right: 0, top: 0, bottom: 80 },
+        });
+      },
       stopOrbit() {
         cancelAnimationFrame(orbitFrame.current);
         orbitFrame.current = 0;
@@ -256,6 +299,7 @@ export const MapView = forwardRef<MapHandle, Props>(
           attributionControl: false,
           style: {
             version: 8,
+            transition: { duration: 0, delay: 0 },
             sources: {},
             layers: [
               {
@@ -283,11 +327,21 @@ export const MapView = forwardRef<MapHandle, Props>(
       m.on("idle", () => {
         if (container.current) {
           container.current.dataset.settled = "true";
-          container.current.dataset.visibleBuildings = String(
-            m.getLayer("buildings")
-              ? m.queryRenderedFeatures({ layers: ["buildings"] }).length
-              : 0,
-          );
+          const rendered = m.getLayer("buildings")
+            ? m.queryRenderedFeatures({ layers: ["buildings"] })
+            : [];
+          container.current.dataset.visibleBuildings = String(rendered.length);
+          container.current.dataset.visibleDatedIds = JSON.stringify([
+            ...new Set(
+              rendered
+                .filter(
+                  (f) =>
+                    f.properties.recorded_year !== null &&
+                    f.properties.recorded_year !== undefined,
+                )
+                .map((f) => f.properties.id),
+            ),
+          ]);
         }
       });
       m.on("error", (e) => {
@@ -296,6 +350,13 @@ export const MapView = forwardRef<MapHandle, Props>(
       });
       m.on("load", () => {
         const data = latest.current.data;
+        dated.current = data.features.flatMap((f) => {
+          const year = recordedYear(f.properties.start_date);
+          return f.properties.kind === "building" && year !== null
+            ? [{ id: f.properties.id, year }]
+            : [];
+        });
+        shownDates.current = new Set(dated.current.map((f) => f.id));
         const renderData: FeatureCollection = {
           type: "FeatureCollection",
           features: data.features.map((f) => ({
@@ -312,6 +373,12 @@ export const MapView = forwardRef<MapHandle, Props>(
               road_type: f.properties.road_type,
               rail_type: f.properties.rail_type,
               recorded_year: recordedYear(f.properties.start_date),
+              ...Object.fromEntries(
+                CONTEXTS.filter((c) => c.id !== "none").map((c) => [
+                  `context_${c.id}`,
+                  contextCategory(f, c.id),
+                ]),
+              ),
             },
           })),
         };
@@ -417,7 +484,11 @@ export const MapView = forwardRef<MapHandle, Props>(
               "#e5a83e",
               footprint,
             ],
-            "fill-extrusion-height": ["coalesce", ["get", "height_m"], 8],
+            "fill-extrusion-height": [
+              "*",
+              ["coalesce", ["get", "height_m"], 8],
+              ["coalesce", ["feature-state", "appearance"], 1],
+            ],
             "fill-extrusion-base": 0,
             "fill-extrusion-opacity": 0.96,
             "fill-extrusion-vertical-gradient": true,
@@ -434,7 +505,11 @@ export const MapView = forwardRef<MapHandle, Props>(
           ],
           paint: {
             "fill-extrusion-color": "#b39476",
-            "fill-extrusion-height": ["coalesce", ["get", "height_m"], 8],
+            "fill-extrusion-height": [
+              "*",
+              ["coalesce", ["get", "height_m"], 8],
+              ["coalesce", ["feature-state", "appearance"], 1],
+            ],
             "fill-extrusion-base": ["coalesce", ["get", "min_height_m"], 0],
             "fill-extrusion-opacity": 0.96,
           },
@@ -580,8 +655,8 @@ export const MapView = forwardRef<MapHandle, Props>(
         );
         const contextLabels: maplibregl.Marker[] = [];
         let labelTime = 0;
-        const labels = () => {
-          if (performance.now() - labelTime < 1200) return;
+        const labels = (force = false) => {
+          if (!force && performance.now() - labelTime < 1200) return;
           labelTime = performance.now();
           contextLabels.forEach((label) => label.remove());
           contextLabels.length = 0;
@@ -598,8 +673,17 @@ export const MapView = forwardRef<MapHandle, Props>(
             )
               continue;
             if (p.kind === "road" && !latest.current.layers.streets) continue;
-            if (p.kind === "building" && !latest.current.layers.buildings)
-              continue;
+            if (p.kind === "building") {
+              const view = latest.current,
+                y = recordedYear(p.start_date);
+              if (!view.layers.buildings || !inPeriod(y, view.period)) continue;
+              if (
+                view.timelineMode === "buildings" &&
+                ((y !== null && y > view.year) ||
+                  (y === null && !view.showUnknown))
+              )
+                continue;
+            }
             names.add(p.name);
             const el = document.createElement("span");
             el.className = "context-map-label";
@@ -612,7 +696,8 @@ export const MapView = forwardRef<MapHandle, Props>(
             if (contextLabels.length >= 24) break;
           }
         };
-        m.on("moveend", labels);
+        updateLabels.current = () => labels(true);
+        m.on("moveend", () => labels());
         labels();
         setReady(true);
         m.once("idle", () => {
@@ -641,12 +726,31 @@ export const MapView = forwardRef<MapHandle, Props>(
           return;
         }
         if (!m.getLayer("buildings")) return;
-        m.getCanvas().style.cursor = m.queryRenderedFeatures(e.point, {
+        const feature = m.queryRenderedFeatures(e.point, {
           layers: ["buildings", "buildings-flat", "station", "places"],
-        }).length
-          ? "pointer"
-          : "";
+        })[0];
+        const id = feature?.properties?.id ?? null;
+        if (hoverId.current !== id) {
+          if (hoverId.current)
+            m.setFeatureState(
+              { source: "city", id: hoverId.current },
+              { hover: false },
+            );
+          if (id) m.setFeatureState({ source: "city", id }, { hover: true });
+          hoverId.current = id;
+          if (container.current) container.current.dataset.hoveredId = id ?? "";
+        }
+        m.getCanvas().style.cursor = id ? "pointer" : "";
       });
+      const clearHover = () => {
+        if (hoverId.current)
+          m.setFeatureState(
+            { source: "city", id: hoverId.current },
+            { hover: false },
+          );
+        hoverId.current = null;
+      };
+      m.getCanvas().addEventListener("mouseleave", clearHover);
       const interrupt = () => {
         stopMotion();
         latest.current.onMotionInterrupted();
@@ -655,115 +759,307 @@ export const MapView = forwardRef<MapHandle, Props>(
       m.on("touchstart", interrupt);
       m.on("wheel", interrupt);
       m.on("pitchend", () => set3d(m.getPitch() > 0));
+      const preference = window.matchMedia("(prefers-reduced-motion: reduce)");
+      const finishMotion = () => {
+        if (
+          (!preference.matches && !document.hidden) ||
+          !m.getLayer("buildings")
+        )
+          return;
+        stopMotion();
+        cancelAnimationFrame(revealFrame.current);
+        cancelAnimationFrame(dateFrame.current);
+        cancelAnimationFrame(colourFrame.current);
+        dated.current.forEach((f) =>
+          m.setFeatureState({ source: "city", id: f.id }, { appearance: 1 }),
+        );
+        for (const id of ["buildings", "building-parts"])
+          m.setPaintProperty(id, "fill-extrusion-height", [
+            "*",
+            ["coalesce", ["get", "height_m"], 8],
+            ["coalesce", ["feature-state", "appearance"], 1],
+          ]);
+        m.setPaintProperty("building-parts", "fill-extrusion-base", [
+          "coalesce",
+          ["get", "min_height_m"],
+          0,
+        ]);
+        const color: ExpressionSpecification = [
+          "case",
+          ["boolean", ["feature-state", "selected"], false],
+          "#e5a83e",
+          ["boolean", ["feature-state", "hover"], false],
+          "#394e48",
+          colourTarget.current,
+        ];
+        m.setPaintProperty("buildings", "fill-extrusion-color", color);
+        m.setPaintProperty("buildings-flat", "fill-color", color);
+      };
+      preference.addEventListener("change", finishMotion);
+      document.addEventListener("visibilitychange", finishMotion);
       return () => {
+        preference.removeEventListener("change", finishMotion);
+        document.removeEventListener("visibilitychange", finishMotion);
         cancelAnimationFrame(orbitFrame.current);
         cancelAnimationFrame(revealFrame.current);
+        cancelAnimationFrame(colourFrame.current);
+        cancelAnimationFrame(dateFrame.current);
         markers.current = [];
         m.remove();
         mapRef.current = null;
       };
     }, []);
+    // Colour transitions run independently from date filtering and camera movement.
     useEffect(() => {
       const m = mapRef.current;
       if (!ready || !m) return;
-      const {
-        layers,
-        theme,
-        size,
-        area,
-        year,
-        selectedId,
-        drawMode,
-        drawPoints,
-      } = props;
+      let base: ExpressionSpecification =
+        props.theme === "era"
+          ? era
+          : props.theme === "footprint"
+            ? footprint
+            : props.theme === "use"
+              ? usage
+              : height;
+      if (props.context !== "none") {
+        const c = CONTEXTS.find((c) => c.id === props.context)!;
+        base = [
+          "match",
+          ["coalesce", ["get", `context_${props.context}`], ""],
+          ...c.categories.flatMap(([id, , color]) => [id, color]),
+          "#e0dfd7",
+        ] as unknown as ExpressionSpecification;
+      }
+      const from = colourTarget.current;
+      colourTarget.current = base;
+      cancelAnimationFrame(colourFrame.current);
+      const paint = (color: ExpressionSpecification) => {
+        const selected: ExpressionSpecification = [
+          "case",
+          ["boolean", ["feature-state", "selected"], false],
+          "#e5a83e",
+          ["boolean", ["feature-state", "hover"], false],
+          "#394e48",
+          color,
+        ];
+        m.setPaintProperty("buildings", "fill-extrusion-color", selected);
+        m.setPaintProperty("buildings-flat", "fill-color", selected);
+        m.setPaintProperty(
+          "building-parts",
+          "fill-extrusion-color",
+          props.context !== "none" || props.theme === "era"
+            ? "#deddd5"
+            : "#b39476",
+        );
+      };
+      const start = performance.now();
+      let previous = 0;
+      const tick = (now: number) => {
+        const t = Math.min(1, (now - start) / 550);
+        if (now - previous > 32 || t === 1) {
+          paint(
+            t === 1 ? base : ["interpolate", ["linear"], t, 0, from, 1, base],
+          );
+          previous = now;
+        }
+        if (t < 1) colourFrame.current = requestAnimationFrame(tick);
+      };
+      if (reduced()) paint(base);
+      else colourFrame.current = requestAnimationFrame(tick);
+      return () => cancelAnimationFrame(colourFrame.current);
+    }, [ready, props.theme, props.context]);
+    useEffect(() => {
+      const m = mapRef.current;
+      if (!ready || !m) return;
       const visibility = (ids: string[], show: boolean) =>
         ids.forEach((id) =>
           m.setLayoutProperty(id, "visibility", show ? "visible" : "none"),
         );
+      visibility(["buildings", "buildings-flat"], props.layers.buildings);
+      // Parts have no reliable parent/date association, so exclude them from isolated chronological views.
       visibility(
-        ["buildings", "buildings-flat", "building-parts"],
-        layers.buildings,
+        ["building-parts"],
+        props.layers.buildings &&
+          props.context === "none" &&
+          props.period === null &&
+          (props.timelineMode !== "buildings" ||
+            (props.year === 2026 && props.showUnknown)),
       );
-      visibility(["water", "green", "trees"], layers.landscape);
-      visibility(["rail", "station"], layers.transit);
-      visibility(["roads", "road-casing"], layers.streets);
-      const colour =
-        theme === "era"
-          ? era
-          : theme === "footprint"
-            ? footprint
-            : theme === "use"
-              ? usage
-              : height;
-      m.setPaintProperty("buildings", "fill-extrusion-color", [
-        "case",
-        ["boolean", ["feature-state", "selected"], false],
-        "#e5a83e",
-        colour,
+      visibility(["water", "green", "trees"], props.layers.landscape);
+      visibility(["rail", "station"], props.layers.transit);
+      visibility(["roads", "road-casing"], props.layers.streets);
+    }, [
+      ready,
+      props.layers,
+      props.context,
+      props.period,
+      props.timelineMode,
+      props.year === 2026,
+      props.showUnknown,
+    ]);
+    useEffect(() => {
+      const m = mapRef.current;
+      if (!ready || !m) return;
+      const cutoff = props.timelineMode === "buildings" ? props.year : 2026;
+      const eligible = dated.current.filter(
+        (f) => f.year <= cutoff && inPeriod(f.year, props.period),
+      );
+      const key = JSON.stringify([
+        eligible.map((f) => f.id),
+        props.size,
+        props.period,
+        props.showUnknown,
+        props.timelineMode,
       ]);
-      m.setPaintProperty("buildings-flat", "fill-color", [
-        "case",
-        ["boolean", ["feature-state", "selected"], false],
-        "#e5a83e",
-        colour,
-      ]);
-      const conditions: FilterSpecification = [
+      if (container.current) {
+        container.current.dataset.chronologyYear = String(props.year);
+        container.current.dataset.context = props.context;
+      }
+      if (key === temporalKey.current) return;
+      temporalKey.current = key;
+      if (container.current) container.current.dataset.settled = "false";
+      const conditions: ["all", ...ExpressionSpecification[]] = [
         "all",
-        ["==", "kind", "building"],
+        ["==", ["get", "kind"], "building"],
       ];
-      if (size === "small") conditions.push(["<", "area_m2", 100]);
-      if (size === "medium")
-        conditions.push([">=", "area_m2", 100], ["<", "area_m2", 500]);
-      if (size === "large") conditions.push([">=", "area_m2", 500]);
+      if (props.size === "small")
+        conditions.push(["<", ["get", "area_m2"], 100]);
+      if (props.size === "medium")
+        conditions.push(
+          [">=", ["get", "area_m2"], 100],
+          ["<", ["get", "area_m2"], 500],
+        );
+      if (props.size === "large")
+        conditions.push([">=", ["get", "area_m2"], 500]);
+      if (props.timelineMode === "buildings") {
+        const dates: ["any", ...ExpressionSpecification[]] = [
+          "any",
+          [
+            "all",
+            ["!=", ["get", "recorded_year"], null],
+            ["<=", ["get", "recorded_year"], cutoff],
+          ],
+        ];
+        if (props.showUnknown && !props.period)
+          dates.push(["==", ["get", "recorded_year"], null]);
+        conditions.push(dates);
+      }
+      if (props.period) {
+        const period = PERIODS.find((p) => p.id === props.period)!;
+        conditions.push(
+          ["!=", ["get", "recorded_year"], null],
+          [">=", ["get", "recorded_year"], period.start],
+          ["<=", ["get", "recorded_year"], period.end],
+        );
+      }
+      const newly = eligible.filter((f) => !shownDates.current.has(f.id));
+      cancelAnimationFrame(dateFrame.current);
+      // Finish interrupted reveals before beginning another cohort.
+      dated.current.forEach((f) =>
+        m.setFeatureState({ source: "city", id: f.id }, { appearance: 1 }),
+      );
+      if (!reduced())
+        newly.forEach((f) =>
+          m.setFeatureState({ source: "city", id: f.id }, { appearance: 0 }),
+        );
       m.setFilter("buildings", conditions);
       m.setFilter("buildings-flat", conditions);
-      m.removeFeatureState({ source: "city" });
-      if (selectedId)
+      updateLabels.current();
+      shownDates.current = new Set(eligible.map((f) => f.id));
+      if (newly.length && !reduced()) {
+        const start = performance.now();
+        const tick = (now: number) => {
+          const t = Math.min(1, (now - start) / 650),
+            appearance = 1 - Math.pow(1 - t, 3);
+          newly.forEach((f) =>
+            m.setFeatureState({ source: "city", id: f.id }, { appearance }),
+          );
+          if (t < 1) dateFrame.current = requestAnimationFrame(tick);
+        };
+        dateFrame.current = requestAnimationFrame(tick);
+      }
+    }, [
+      ready,
+      props.year,
+      props.timelineMode,
+      props.period,
+      props.showUnknown,
+      props.size,
+      props.context,
+    ]);
+    useEffect(() => {
+      const m = mapRef.current;
+      if (!ready || !m) return;
+      if (previousSelection.current)
         m.setFeatureState(
-          { source: "city", id: selectedId },
+          { source: "city", id: previousSelection.current },
+          { selected: false },
+        );
+      if (props.selectedId)
+        m.setFeatureState(
+          { source: "city", id: props.selectedId },
           { selected: true },
         );
-      (m.getSource("study") as GeoJSONSource).setData(area ?? empty);
+      previousSelection.current = props.selectedId;
+    }, [ready, props.selectedId]);
+    useEffect(() => {
+      const m = mapRef.current;
+      if (!ready || !m) return;
+      (m.getSource("study") as GeoJSONSource).setData(props.area ?? empty);
+    }, [ready, props.area]);
+    useEffect(() => {
+      const m = mapRef.current;
+      if (!ready || !m) return;
       const draft: FeatureCollection = {
         type: "FeatureCollection",
-        features: drawPoints.map((p) => ({
+        features: props.drawPoints.map((p) => ({
           type: "Feature",
           properties: {},
           geometry: { type: "Point", coordinates: p },
         })),
       };
-      if (drawPoints.length > 1)
+      if (props.drawPoints.length > 1)
         draft.features.push({
           type: "Feature",
           properties: {},
-          geometry: { type: "LineString", coordinates: drawPoints },
+          geometry: { type: "LineString", coordinates: props.drawPoints },
         });
       (m.getSource("draft") as GeoJSONSource).setData(draft);
-      m.getCanvas().style.cursor = drawMode ? "crosshair" : "";
+      m.getCanvas().style.cursor = props.drawMode ? "crosshair" : "";
+    }, [ready, props.drawMode, props.drawPoints]);
+    useEffect(() => {
       markers.current.forEach(({ id, marker }) => {
         const h = HERITAGE.find((h) => h.id === id)!;
-        marker.getElement().style.display =
-          layers.heritage &&
-          h.year <= year &&
-          (props.lens === "all" || h.lenses?.includes(props.lens))
-            ? ""
-            : "none";
-        marker.getElement().classList.toggle("active", selectedId === id);
-        marker
-          .getElement()
-          .style.setProperty(
-            "--era-color",
-            h.year < 1700
-              ? "#9d5d55"
-              : h.year < 1947
-                ? "#c28b53"
-                : h.year < 2000
-                  ? "#6e9989"
-                  : "#6b8caf",
-          );
-        marker.getElement().style.pointerEvents = drawMode ? "none" : "";
+        const visible =
+          props.layers.heritage &&
+          (props.timelineMode !== "heritage" || h.year <= props.year) &&
+          (props.lens === "all" || h.lenses?.includes(props.lens));
+        const el = marker.getElement();
+        el.classList.toggle("marker-hidden", !visible);
+        el.setAttribute("aria-hidden", String(!visible));
+        el.tabIndex = visible ? 0 : -1;
+        el.classList.toggle("active", props.selectedId === id);
+        el.style.setProperty(
+          "--era-color",
+          h.year < 1700
+            ? "#9d5d55"
+            : h.year < 1947
+              ? "#c28b53"
+              : h.year < 2000
+                ? "#6e9989"
+                : "#6b8caf",
+        );
+        el.style.pointerEvents = !visible || props.drawMode ? "none" : "";
       });
-    }, [ready, props]);
+    }, [
+      ready,
+      props.layers.heritage,
+      props.timelineMode,
+      props.year,
+      props.lens,
+      props.selectedId,
+      props.drawMode,
+    ]);
     return (
       <>
         <div
@@ -781,7 +1077,14 @@ export const MapView = forwardRef<MapHandle, Props>(
             </p>
           </div>
         )}
-        <div className="map-controls" aria-label="Map navigation">
+        <div
+          className="map-controls"
+          aria-label="Map navigation"
+          onClickCapture={() => {
+            stopMotion();
+            latest.current.onMotionInterrupted();
+          }}
+        >
           <button
             title="Reset view"
             aria-label="Reset view"
@@ -791,6 +1094,7 @@ export const MapView = forwardRef<MapHandle, Props>(
                 zoom: 14.1,
                 pitch: 48,
                 bearing: -17,
+                duration: reduced() ? 0 : 1200,
               })
             }
           >
@@ -799,21 +1103,27 @@ export const MapView = forwardRef<MapHandle, Props>(
           <button
             title="Zoom in"
             aria-label="Zoom in"
-            onClick={() => mapRef.current?.zoomIn()}
+            onClick={() =>
+              mapRef.current?.zoomIn({ duration: reduced() ? 0 : 400 })
+            }
           >
             <Plus size={18} />
           </button>
           <button
             title="Zoom out"
             aria-label="Zoom out"
-            onClick={() => mapRef.current?.zoomOut()}
+            onClick={() =>
+              mapRef.current?.zoomOut({ duration: reduced() ? 0 : 400 })
+            }
           >
             <Minus size={18} />
           </button>
           <button
             title="Reset north"
             aria-label="Reset north"
-            onClick={() => mapRef.current?.rotateTo(0)}
+            onClick={() =>
+              mapRef.current?.rotateTo(0, { duration: reduced() ? 0 : 500 })
+            }
           >
             <Compass size={18} />
           </button>
@@ -822,7 +1132,10 @@ export const MapView = forwardRef<MapHandle, Props>(
             title={is3d ? "Switch to 2D" : "Switch to 3D"}
             aria-label={is3d ? "Switch to 2D" : "Switch to 3D"}
             onClick={() =>
-              mapRef.current?.easeTo({ pitch: is3d ? 0 : 55, duration: 500 })
+              mapRef.current?.easeTo({
+                pitch: is3d ? 0 : 55,
+                duration: reduced() ? 0 : 500,
+              })
             }
           >
             {is3d ? <Box size={18} /> : <MapIcon size={18} />}

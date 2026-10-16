@@ -1,3 +1,4 @@
+import { CONTEXTS, PERIODS } from "./chronology";
 import kinks from "@turf/kinks";
 import booleanValid from "@turf/boolean-valid";
 import booleanIntersects from "@turf/boolean-intersects";
@@ -78,6 +79,21 @@ export function parseSavedView(hash: string): SavedView | null {
       s.lens &&
       !["all", "mughal", "sacred", "civic", "water"].includes(s.lens)
     )
+      return null;
+    if (
+      s.timelineMode !== undefined &&
+      !["buildings", "heritage"].includes(s.timelineMode)
+    )
+      return null;
+    if (s.context !== undefined && !CONTEXTS.some((c) => c.id === s.context))
+      return null;
+    if (
+      s.period !== undefined &&
+      s.period !== null &&
+      !PERIODS.some((p) => p.id === s.period)
+    )
+      return null;
+    if (s.showUnknown !== undefined && typeof s.showUnknown !== "boolean")
       return null;
     if (s.area) s.area = validateArea(s.area);
     if (
