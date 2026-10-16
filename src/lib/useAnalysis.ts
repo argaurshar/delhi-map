@@ -1,10 +1,18 @@
 import { useEffect, useState } from "react";
-import type { Analysis, CityData, SizeFilter, StudyArea } from "./types";
+import type {
+  Analysis,
+  CityData,
+  SizeFilter,
+  StudyArea,
+  Overview,
+} from "./types";
+import { overviewResult } from "./overview";
 export function useAnalysis(
   data: CityData | null,
   area: StudyArea,
   size: SizeFilter,
   enabled = true,
+  overview: Overview | null = null,
 ) {
   const [result, setResult] = useState<Analysis | null>(null);
   const [busy, setBusy] = useState(false);
@@ -18,6 +26,15 @@ export function useAnalysis(
     setBusy(true);
     setResult(null);
     setError("");
+    if (overview) {
+      try {
+        setResult(overviewResult(data, overview, size));
+      } catch (e) {
+        setError(e instanceof Error ? e.message : "Overview unavailable");
+      }
+      setBusy(false);
+      return;
+    }
     const worker = new Worker(
       new URL("./analysis.worker.ts", import.meta.url),
       { type: "module" },
@@ -33,6 +50,6 @@ export function useAnalysis(
     };
     worker.postMessage({ id: 1, data, area, size });
     return () => worker.terminate();
-  }, [data, area, size, enabled]);
+  }, [data, area, size, enabled, overview]);
   return { result, busy, error };
 }

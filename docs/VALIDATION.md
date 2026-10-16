@@ -1,19 +1,16 @@
-# Pilot validation
+# Release validation — 16 October 2026
 
-Validated in the current cloud instance with Node 24.19.0, Python 3.12 and headless Chromium using software WebGL.
+Validated with Node 24.19.0, Python 3.12, Shapely 2.1.2, PyOsmium 4.3.1 and headless Chromium with software WebGL.
 
-- Repeated `scripts/setup.sh`: frozen npm installation, Python data prerequisites, tests and production build passed.
-- TypeScript and Vite production build passed. Vite reports a bundle-size advisory for the map renderer; citywide tiling and further loading optimizations remain roadmap work.
-- All 9 unit tests passed: clipping, overlap union, polygon holes, unknown-height handling, filter/export consistency, empty selection, boundary validation, shared-view rejection and CSV escaping.
-- Full browser smoke workflow passed against both the Vite development server and the production preview.
-- Browser checks exercised rendering, 2D/3D, layers, search, source cards, radius/polygon/imported study areas, CSV/GeoJSON/PNG/Markdown downloads, the record table, comparison, timeline, shared-view restoration, dialog dismissal and a 390 × 844 mobile viewport.
-- No uncaught JavaScript errors or external runtime requests during browser checks.
-- The filtered Connaught Place test selection contained 53 building records; CSV and clipped GeoJSON exports both contained exactly 53 records.
-- All 7,280 generated features have valid nonempty geometry and unique source IDs. Breakdown: 5,185 buildings, 1,695 street ways, 296 rail ways, 63 landscape features, 12 water features and 29 station records.
-- The archive SHA-256 was verified; rerunning its conversion reproduced the GeoJSON and manifest byte-for-byte.
-- `npm run format:check` passed.
-- GitHub Pages build (`--base=/delhi-map/`) passed all 9 unit tests and the full browser smoke workflow at the `/delhi-map/` path, including map loading, exports, shared views and mobile layout. No uncaught JavaScript errors or external runtime requests occurred.
+- 14 unit tests pass: study clipping/union, holes, height evidence, filters, CSV safety, imported boundaries, saved-view rejection, conservative date parsing, exact Wikidata linking, safe external URLs, perimeter calculations and profile source/licence integrity.
+- TypeScript and the production GitHub Pages build pass. The MapLibre bundle still produces a size advisory.
+- The full production browser workflow passes: map rendering, 2D/3D, layers, search, sources, radius/polygon/imported study areas, filters, all four exports, records, comparison, timeline, saved views and mobile selection.
+- The filtered Connaught Place test selection now contains 99 records; CSV and clipped GeoJSON both contain exactly 99 records and carry the 2026-10-15 snapshot.
+- Cinematic/profile checks pass: automatic tour advance, play/pause, next stop, orbit movement, interruption on drag, loaded licensed images, source facts, OSM-linked encyclopedia text and attribution, geometry details, date colouring, history lenses, replay and reduced-motion/mobile behavior.
+- No uncaught browser errors or external runtime requests occurred in the standard browser workflow. Fonts, map data, profile text and images are bundled locally.
+- 114,401 geometries are valid, nonempty and have unique source IDs. Counts match the manifest. Three edge-touching / sub-0.01 m² building overlaps are excluded from whole-extent analysis.
+- Geofabrik's provider checksum was verified. The complete cached refresh pipeline succeeded again; compressed GeoJSON expands byte-for-byte to the source file, and full-extent filter counts reconcile.
+- Whole-extent analysis uses a precomputed geometric union with the same spherical area formula as Turf. Custom selections retain browser-worker clipping and union. This avoids the long initial union calculation for 63,676 footprints.
+- Profile photographs were visually reviewed, with author, source page and licence retained. Government prose was summarised in original wording. Linked Wikipedia introductions are separately attributed under CC BY-SA 4.0.
 
-Current processes were started for development and production validation. They must restart after environment restoration. Installation and startup instructions were saved to the cloud environment draft; environment publication has completed. Public deployment is tracked in the repository’s GitHub Pages workflow.
-
-This validates the software workflow, not historical accuracy, citywide completeness, current conditions, legal planning status, cadastral measurements or a performance target on ordinary end-user hardware. The 2017 snapshot and approximate editorial heritage markers retain their stated limitations. Live Overpass refresh attempts after publication failed with upstream HTTP errors/timeouts, so the archival dataset remains in use.
+These checks validate the software and data-processing workflow, not complete OSM coverage, the independent accuracy of every contributor tag, construction condition, legal planning status or a measured architectural model. Unknown ages and heights remain unknown. The 24-site timeline presents the explicitly labelled construction, approximate-period or institutional milestone for each site.

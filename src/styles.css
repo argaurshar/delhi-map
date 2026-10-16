@@ -2140,3 +2140,447 @@ td a {
   margin-right: 2px;
   font-weight: 600;
 }
+
+/* Cinematic exploration and richer architectural profiles. */
+.cinema {
+  position: absolute;
+  z-index: 11;
+  top: 74px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 360px;
+}
+.cinema-actions {
+  display: flex;
+  align-items: center;
+  padding: 5px;
+  gap: 3px;
+  border: 1px solid #d9ded1;
+  border-radius: 10px;
+  background: rgba(255, 253, 247, 0.96);
+  box-shadow: 0 5px 20px #243c3510;
+}
+.cinema-actions button {
+  flex: 1;
+  display: flex;
+  gap: 5px;
+  align-items: center;
+  justify-content: center;
+  padding: 9px 5px;
+  font-size: 10px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: #385a4d;
+  white-space: nowrap;
+}
+.cinema-actions button:hover,
+.cinema-actions .active {
+  background: #e6edde;
+}
+.cinema-actions button[aria-pressed="true"] {
+  color: #fff;
+  background: #315f52;
+}
+.tour-player {
+  margin-top: 8px;
+  background: rgba(255, 253, 247, 0.98);
+  border: 1px solid #d9ded1;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 10px 35px #243c3518;
+}
+.tour-top {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border-bottom: 1px solid #e9e8de;
+  padding: 10px 14px;
+}
+.tour-top select {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  background: transparent;
+  font-size: 11px;
+  color: #315f52;
+}
+.tour-top button,
+.tour-transport button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  background: transparent;
+  color: #315f52;
+  padding: 7px;
+}
+.tour-current {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px;
+}
+.tour-current > span {
+  font-size: 11px;
+  letter-spacing: 1px;
+  color: #9b7c58;
+}
+.tour-current strong {
+  font-family: "Instrument Serif", serif;
+  font-size: 25px;
+  font-weight: 400;
+}
+.tour-current small {
+  display: block;
+  font-size: 10px;
+  color: #747c70;
+  margin-top: 4px;
+}
+.tour-progress {
+  height: 3px;
+  background: #e7e9de;
+  overflow: hidden;
+}
+.tour-progress span {
+  display: block;
+  height: 100%;
+  width: 100%;
+  background: #b78353;
+  transform-origin: left;
+  animation: tour-progress linear forwards;
+}
+@keyframes tour-progress {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+.tour-transport {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  align-items: center;
+  padding: 10px;
+}
+.tour-transport .tour-play {
+  background: #315f52;
+  color: #fff;
+  gap: 8px;
+  border-radius: 6px;
+  padding: 9px 16px;
+}
+.tour-transport select {
+  font-size: 11px;
+  padding: 5px;
+  border: 1px solid #d9ded1;
+  border-radius: 5px;
+  background: transparent;
+}
+.tour-player p {
+  margin: 0 16px 12px;
+  font-size: 10px;
+  line-height: 1.5;
+  color: #747c70;
+}
+.heritage-lenses {
+  padding: 0 18px 16px;
+  border-bottom: 1px solid var(--line);
+}
+.heritage-lenses .section-heading {
+  padding: 16px 0 10px;
+}
+.lens-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+.lens-buttons button {
+  font-size: 10px;
+  padding: 6px 8px;
+  border: 1px solid #dce0d4;
+  border-radius: 20px;
+  background: transparent;
+  color: #627162;
+}
+.lens-buttons button.active {
+  background: #315f52;
+  border-color: #315f52;
+  color: white;
+}
+.directory-toggle {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 12px;
+  padding: 7px 0;
+  width: 100%;
+  font-size: 11px;
+  background: transparent;
+  border: 0;
+  color: #315f52;
+}
+.landmark-directory {
+  max-height: 230px;
+  overflow: auto;
+  scrollbar-width: thin;
+}
+.landmark-directory button,
+.nearby-list button {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 0;
+  width: 100%;
+  border: 0;
+  border-bottom: 1px solid #e8e9df;
+  background: transparent;
+  text-align: left;
+  font-size: 12px;
+  color: #304d42;
+}
+.landmark-directory small,
+.nearby-list small {
+  display: block;
+  font-size: 10px;
+  color: #808777;
+  margin-top: 4px;
+}
+.heritage-photo {
+  margin: 0;
+}
+.heritage-photo img {
+  width: 100%;
+  height: 175px;
+  display: block;
+  object-fit: cover;
+}
+.heritage-photo figcaption {
+  padding: 7px 15px;
+  font-size: 9px;
+  line-height: 1.5;
+  background: #eceee4;
+  color: #65715d;
+}
+.heritage-photo a {
+  color: inherit;
+  text-decoration: underline;
+}
+.profile-heading-art {
+  background: linear-gradient(135deg, #dfe7d8, #f4e6cc);
+  padding: 28px 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.profile-heading-art span,
+.profile-heading-art small {
+  font-size: 9px;
+  letter-spacing: 1px;
+  color: #6d7f68;
+}
+.profile-heading-art strong {
+  font-family: "Instrument Serif", serif;
+  font-size: 30px;
+  font-weight: 400;
+  color: #315f52;
+}
+.architect-reading {
+  padding: 14px;
+  background: #eff1e7;
+  border-left: 3px solid #91a687;
+  margin: 20px 0;
+}
+.architect-reading h3,
+.building-profile h3,
+.detail-body > h3 {
+  font-size: 13px;
+  font-weight: 600;
+  margin: 0 0 9px;
+}
+.architect-reading p {
+  font-size: 12px;
+  line-height: 1.8;
+  margin: 0 0 8px;
+}
+.architect-reading small {
+  font-size: 9px;
+  color: #718065;
+}
+.profile-sources {
+  padding-left: 18px;
+  margin: 12px 0 20px;
+}
+.profile-sources li {
+  padding: 4px 0 7px;
+  font-size: 11px;
+  line-height: 1.6;
+  color: #315f52;
+}
+.profile-sources a {
+  text-decoration: underline;
+}
+.profile-sources small {
+  display: block;
+  color: #808777;
+  font-size: 9px;
+}
+.citation {
+  color: #987347;
+  font-size: 9px;
+}
+.building-profile {
+  border-top: 1px solid #dce0d4;
+  padding-top: 18px;
+  margin-top: 18px;
+}
+.facts dd {
+  overflow-wrap: anywhere;
+}
+.tag-details {
+  margin: 18px 0;
+  font-size: 11px;
+}
+.tag-details summary {
+  cursor: pointer;
+  color: #315f52;
+  padding: 9px 0;
+}
+.tag-details .facts {
+  margin-top: 0;
+}
+.tag-details .facts dt {
+  overflow-wrap: anywhere;
+}
+.linked-profile {
+  display: block;
+  background: #e8eddf;
+  border: 1px solid #ced9c2;
+  border-radius: 6px;
+  font-size: 12px;
+  text-align: left;
+  padding: 12px;
+  margin-bottom: 16px;
+  color: #315f52;
+}
+.linked-profile small {
+  display: block;
+  font-size: 9px;
+  margin-top: 7px;
+}
+.context-map-label {
+  pointer-events: none;
+  font-size: 9px;
+  color: #686d60;
+  text-shadow:
+    0 1px 3px #fff,
+    1px 0 3px #fff,
+    -1px 0 3px #fff;
+  max-width: 120px;
+  text-align: center;
+  line-height: 1.3;
+}
+.heritage-marker .marker-dot {
+  background: var(--era-color, #b78353);
+}
+.heritage-marker.active .marker-dot {
+  box-shadow: 0 0 0 5px #c9954e30;
+  animation: landmark-pulse 2s infinite;
+}
+@keyframes landmark-pulse {
+  50% {
+    box-shadow: 0 0 0 10px #c9954e08;
+  }
+}
+.colour-section .segmented button {
+  padding-left: 6px;
+  padding-right: 6px;
+}
+@media (min-width: 1151px) {
+  .right-panel {
+    width: 310px;
+  }
+}
+@media (max-width: 1150px) and (min-width: 901px) {
+  .cinema {
+    width: 320px;
+    left: 52%;
+  }
+  .cinema-actions button {
+    font-size: 9px;
+  }
+}
+@media (max-width: 900px) {
+  .cinema {
+    top: 49px;
+    left: 12px;
+    right: 12px;
+    transform: none;
+    width: auto;
+    max-width: 360px;
+  }
+  .cinema-actions button {
+    padding: 9px 3px;
+    font-size: 10px;
+  }
+  .tour-player {
+    width: 100%;
+  }
+  .right-panel {
+    top: 105px;
+  }
+}
+@media (max-width: 600px) {
+  .right-panel {
+    top: auto;
+  }
+  .tour-current {
+    padding: 11px 14px;
+  }
+  .tour-current strong {
+    font-size: 22px;
+  }
+  .tour-player p {
+    font-size: 9px;
+  }
+  .heritage-photo img {
+    height: 140px;
+  }
+  .cinema {
+    max-width: none;
+  }
+  .cinema.open ~ .right-panel {
+    max-height: 200px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .tour-progress span,
+  .heritage-marker.active .marker-dot {
+    animation: none;
+  }
+}
+.linked-reference {
+  padding: 14px;
+  background: #f0f1e8;
+  border-radius: 8px;
+  margin-bottom: 20px;
+}
+.linked-reference > strong {
+  font-family: "Instrument Serif", serif;
+  font-size: 23px;
+  font-weight: 400;
+}
+.linked-reference summary {
+  font-size: 11px;
+  color: #315f52;
+  cursor: pointer;
+  padding: 8px 0;
+}
+.reference-text {
+  white-space: pre-line;
+  font-size: 12px;
+  line-height: 1.8;
+}

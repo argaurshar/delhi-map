@@ -6,7 +6,8 @@ import type {
   MultiPolygon,
 } from "geojson";
 export type Mode = "explore" | "analyse" | "compare";
-export type Theme = "footprint" | "use" | "height";
+export type Theme = "footprint" | "use" | "height" | "era";
+export type HeritageLens = "all" | "mughal" | "sacred" | "civic" | "water";
 export type SizeFilter = "all" | "small" | "medium" | "large";
 export type Layers = {
   buildings: boolean;
@@ -31,6 +32,9 @@ export interface Properties {
   snapshot: string;
   area_m2?: number;
   selected_area_m2?: number;
+  center?: [number, number];
+  tags?: Record<string, string>;
+  min_height_m?: number;
 }
 export type CityFeature = Feature<Geometry, Properties>;
 export type CityData = FeatureCollection<Geometry, Properties>;
@@ -47,6 +51,7 @@ export interface Manifest {
   attribution: string;
   licence: string;
   licence_url: string;
+  building_attributes?: Record<string, number>;
 }
 export interface Heritage {
   id: string;
@@ -60,6 +65,19 @@ export interface Heritage {
   source: string;
   sourceName: string;
   dateLabel: string;
+  datePrecision?: "documented" | "approximate" | "milestone";
+  lenses?: HeritageLens[];
+  facts?: { label: string; value: string; source: number }[];
+  reading?: string;
+  sources?: { title: string; url: string; checked: string }[];
+  photo?: {
+    path: string;
+    author: string;
+    licence: string;
+    licenceUrl: string;
+    page: string;
+  };
+  wikidata?: string;
 }
 export interface Analysis {
   count: number;
@@ -81,6 +99,7 @@ export interface SavedView {
   theme: Theme;
   size: SizeFilter;
   layers: Layers;
+  lens?: HeritageLens;
   year: number;
   mode: Mode;
   area: StudyArea | null;
@@ -92,4 +111,14 @@ export interface SavedView {
     pitch: number;
     bearing: number;
   };
+}
+export interface Overview {
+  dataset: string;
+  excluded?: string[];
+  areaM2: number;
+  edgeClips: Record<string, { geometry: Geometry; area: number }>;
+  filters: Record<
+    SizeFilter,
+    Omit<Analysis, "areaM2" | "features" | "clipped">
+  >;
 }

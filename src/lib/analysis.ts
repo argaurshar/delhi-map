@@ -2,6 +2,7 @@ import area from "@turf/area";
 import intersect from "@turf/intersect";
 import union from "@turf/union";
 import booleanIntersects from "@turf/boolean-intersects";
+import bbox from "@turf/bbox";
 import { featureCollection } from "@turf/helpers";
 import type { Feature, Polygon, MultiPolygon } from "geojson";
 import { matchesSize, PILOT } from "./data";
@@ -33,6 +34,7 @@ export function analyse(
     clipped: { type: "FeatureCollection", features: [] },
   };
   if (!clippedArea) return empty;
+  const extent = bbox(clippedArea);
   const features: CityFeature[] = [];
   const polygons: Feature<Polygon | MultiPolygon, Properties>[] = [];
   const bins = [0, 0, 0, 0];
@@ -45,6 +47,14 @@ export function analyse(
     )
       continue;
     const polygon = feature as Feature<Polygon | MultiPolygon, Properties>;
+    const bounds = feature.bbox ?? bbox(feature);
+    if (
+      bounds[0] > extent[2] ||
+      bounds[2] < extent[0] ||
+      bounds[1] > extent[3] ||
+      bounds[3] < extent[1]
+    )
+      continue;
     if (!booleanIntersects(polygon, clippedArea)) continue;
     const clipped = intersect(featureCollection([polygon, clippedArea]));
     if (!clipped) continue;
@@ -105,6 +115,13 @@ export function toCsv(
     "source_url",
     "dataset",
     "study_area",
+    "recorded_use",
+    "storeys",
+    "address",
+    "building_material",
+    "roof_shape",
+    "wikidata",
+    "wikipedia",
   ];
   const rows = result.features.map((f) => [
     f.properties.id,
@@ -118,6 +135,22 @@ export function toCsv(
     f.properties.source_url,
     dataset,
     studyName,
+    f.properties.use,
+    f.properties.levels,
+    [
+      "addr:housenumber",
+      "addr:street",
+      "addr:suburb",
+      "addr:city",
+      "addr:postcode",
+    ]
+      .map((k) => f.properties.tags?.[k])
+      .filter(Boolean)
+      .join(", "),
+    f.properties.tags?.["building:material"],
+    f.properties.tags?.["roof:shape"],
+    f.properties.tags?.wikidata,
+    f.properties.tags?.wikipedia,
   ]);
   return [keys, ...rows]
     .map((row) => row.map(escapeCsv).join(","))

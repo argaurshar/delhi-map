@@ -6,6 +6,7 @@ URL=os.environ.get('ATLAS_TEST_URL','http://127.0.0.1:5173')
 OUT=Path(os.environ.get('ATLAS_TEST_OUTPUT','/workspace/scratch/delhi-browser'));OUT.mkdir(parents=True,exist_ok=True)
 
 def ready(page):
+    page.locator('.map-loading').wait_for(state='detached',timeout=90000)
     page.wait_for_function('!document.querySelector(".export-trigger").disabled',timeout=90000)
 
 def dismiss(page):
@@ -19,7 +20,7 @@ with sync_playwright() as p:
     page.goto(URL,wait_until='networkidle');ready(page)
     assert page.locator('canvas').count()==1
     assert page.locator('.map-error').count()==0
-    assert '5,185' in page.locator('.metrics').inner_text()
+    assert '63,673' in page.locator('.metrics').inner_text()
     print('Browser checkpoint',page.locator('.mode-nav .active').inner_text(),flush=True)
     page.screenshot(path=str(OUT/'01-overview.png'))
     page.get_by_role('button',name='Switch to 2D',exact=True).click()
@@ -29,28 +30,29 @@ with sync_playwright() as p:
     page.get_by_role('switch',name='Transit & streets').click()
     assert page.get_by_role('switch',name='Transit & streets').get_attribute('aria-checked')=='true'
     page.get_by_role('button',name='Height',exact=True).click()
-    assert 'Only 4 records' in page.locator('.colour-section').inner_text()
+    assert 'Only 3562 records' in page.locator('.colour-section').inner_text()
     page.get_by_role('button',name='Footprint',exact=True).click()
     search=page.get_by_role('textbox',name='Search places and mapped buildings')
     search.fill('Jama')
     page.locator('.search-results').get_by_role('button',name='Jama Masjid Mosque',exact=True).click()
     assert '1656' in page.locator('.right-panel').inner_text()
-    assert page.get_by_role('link',name='Wikipedia · Jama Masjid, Delhi').get_attribute('href').startswith('https://')
+    assert page.get_by_role('link',name='Ministry of Tourism · Jama Masjid').last.get_attribute('href').startswith('https://')
     print('Browser checkpoint',page.locator('.mode-nav .active').inner_text(),flush=True)
+    page.wait_for_function('document.querySelector(".heritage-photo img")?.naturalWidth > 0')
     page.screenshot(path=str(OUT/'02-heritage.png'))
     page.get_by_role('button',name='Study its surroundings').click();ready(page)
     assert '500 m around Jama Masjid' in page.locator('.right-panel').inner_text()
     page.get_by_role('combobox',name='Study area',exact=True).select_option('connaught');ready(page)
     page.get_by_role('combobox',name='Footprint filter',exact=True).select_option('small');ready(page)
     count=int(page.locator('.metric').first.locator('strong').inner_text().replace(',',''))
-    assert 0<count<5185
+    assert 0<count<63673
     page.get_by_role('button',name='Export',exact=True).click()
     with page.expect_download() as d:page.get_by_role('dialog').get_by_role('button',name='Building records').click()
     d.value.save_as(str(OUT/'selection.csv'))
     rows=list(csv.DictReader((OUT/'selection.csv').read_text(encoding='utf-8-sig').splitlines()))
     assert len(rows)==count
     assert all(float(r['full_footprint_m2'])<=100 for r in rows)
-    assert all(r['snapshot']=='2017-08-15' for r in rows)
+    assert all(r['snapshot']=='2026-10-15' for r in rows)
     with page.expect_download() as d:page.get_by_role('dialog').get_by_role('button',name='Spatial selection').click()
     d.value.save_as(str(OUT/'selection.geojson'))
     geo=json.loads((OUT/'selection.geojson').read_text())
@@ -92,7 +94,7 @@ with sync_playwright() as p:
     slider=page.get_by_role('slider',name='Heritage completion year')
     slider.fill('1650')
     page.wait_for_function('document.querySelector(".timeline-year strong").textContent === "1650"')
-    assert page.locator('.heritage-marker:visible').count()==2
+    assert page.locator('.heritage-marker:visible').count()==8
     page.get_by_role('button',name='Play heritage timeline',exact=True).click()
     page.wait_for_function('Number(document.querySelector(".timeline-year strong").textContent) > 1650')
     page.get_by_role('button',name='Pause heritage timeline',exact=True).click()
@@ -116,7 +118,7 @@ with sync_playwright() as p:
     mobile.get_by_role('button',name='Show layer panel',exact=True).click()
     assert mobile.get_by_role('textbox',name='Search places and mapped buildings').is_visible()
     mobile.get_by_role('textbox',name='Search places and mapped buildings').fill('Red Fort')
-    mobile.locator('.search-results').get_by_role('button',name='Red Fort').click()
+    mobile.locator('.search-results').get_by_role('button',name='Red Fort Fort complex',exact=True).click()
     assert mobile.get_by_role('button',name='Show layer panel',exact=True).is_visible()
     mobile.wait_for_function('getComputedStyle(document.querySelector(".left-panel")).opacity === "0"')
     mobile.screenshot(path=str(OUT/'05-mobile.png'))

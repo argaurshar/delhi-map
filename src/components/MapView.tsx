@@ -21,10 +21,17 @@ import type {
   StudyArea,
   Theme,
   SizeFilter,
+  HeritageLens,
 } from "../lib/types";
+import { recordedYear } from "../lib/buildings";
 import { HERITAGE, PILOT } from "../lib/data";
 
 export interface MapHandle {
+  cinematic: (center: [number, number], zoom?: number) => void;
+  startOrbit: () => void;
+  stopOrbit: () => void;
+  stopMotion: () => void;
+  reveal: () => void;
   flyTo: (center: [number, number], zoom?: number) => void;
   camera: () => SavedView["camera"];
   canvas: () => HTMLCanvasElement | undefined;
@@ -32,6 +39,8 @@ export interface MapHandle {
 }
 interface Props {
   data: CityData;
+  lens: HeritageLens;
+  onMotionInterrupted: () => void;
   layers: Layers;
   theme: Theme;
   size: SizeFilter;
@@ -47,6 +56,22 @@ interface Props {
   initialCamera?: SavedView["camera"];
 }
 const empty: FeatureCollection = { type: "FeatureCollection", features: [] };
+const era: ExpressionSpecification = [
+  "case",
+  ["==", ["get", "recorded_year"], null],
+  "#bfc4be",
+  [
+    "step",
+    ["get", "recorded_year"],
+    "#9d5d55",
+    1700,
+    "#c28b53",
+    1947,
+    "#6e9989",
+    2000,
+    "#6b8caf",
+  ],
+];
 const footprint: ExpressionSpecification = [
   "step",
   ["get", "area_m2"],
@@ -61,13 +86,31 @@ const footprint: ExpressionSpecification = [
 const usage: ExpressionSpecification = [
   "match",
   ["get", "use"],
-  ["commercial", "market", "hotel"],
+  [
+    "commercial",
+    "retail",
+    "market",
+    "marketplace",
+    "hotel",
+    "supermarket",
+    "mall",
+  ],
   "#c89854",
   ["house", "residential", "apartments"],
   "#7b9585",
-  ["mosque", "church", "temple", "gurudwara"],
+  ["mosque", "church", "temple", "gurudwara", "place_of_worship"],
   "#bd7d62",
-  ["school", "train_station", "railway_station", "transportation"],
+  [
+    "school",
+    "college",
+    "university",
+    "hospital",
+    "civic",
+    "public",
+    "train_station",
+    "railway_station",
+    "transportation",
+  ],
   "#607d89",
   "#c9c7b9",
 ];
@@ -96,15 +139,80 @@ export const MapView = forwardRef<MapHandle, Props>(
     const [ready, setReady] = useState(false);
     const [is3d, set3d] = useState((props.initialCamera?.pitch ?? 48) > 0);
     const [error, setError] = useState("");
+    const orbitFrame = useRef(0),
+      revealFrame = useRef(0);
+    const reduced = () =>
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const stopMotion = () => {
+      cancelAnimationFrame(orbitFrame.current);
+      orbitFrame.current = 0;
+      mapRef.current?.stop();
+    };
+    const reveal = () => {
+      const m = mapRef.current;
+      if (!m?.getLayer("buildings")) return;
+      cancelAnimationFrame(revealFrame.current);
+      if (reduced()) return;
+      const start = performance.now();
+      const tick = (time: number) => {
+        const progress = Math.min(1, (time - start) / 1800);
+        const eased = 1 - Math.pow(1 - progress, 3);
+        m.setPaintProperty("buildings", "fill-extrusion-height", [
+          "*",
+          ["coalesce", ["get", "height_m"], 8],
+          eased,
+        ]);
+        if (progress < 1) revealFrame.current = requestAnimationFrame(tick);
+      };
+      revealFrame.current = requestAnimationFrame(tick);
+    };
     const markers = useRef<{ id: string; marker: maplibregl.Marker }[]>([]);
     useImperativeHandle(ref, () => ({
+      stopOrbit() {
+        cancelAnimationFrame(orbitFrame.current);
+        orbitFrame.current = 0;
+      },
+      stopMotion,
+      reveal,
+      cinematic(center, zoom = 16.5) {
+        mapRef.current?.flyTo({
+          center,
+          zoom,
+          pitch: 58,
+          bearing: -28,
+          duration: reduced() ? 0 : 3200,
+          essential: false,
+          padding:
+            window.innerWidth < 900
+              ? { left: 0, right: 0, top: 0, bottom: 130 }
+              : { left: 290, right: 350, top: 60, bottom: 60 },
+        });
+      },
+      startOrbit() {
+        cancelAnimationFrame(orbitFrame.current);
+        if (reduced()) return;
+        let previous = performance.now();
+        const tick = (now: number) => {
+          const m = mapRef.current;
+          if (!m) return;
+          const dt = Math.min(now - previous, 80);
+          previous = now;
+          if (!m.isMoving())
+            m.jumpTo({ bearing: (m.getBearing() + dt * 0.0035) % 360 });
+          orbitFrame.current = requestAnimationFrame(tick);
+        };
+        orbitFrame.current = requestAnimationFrame(tick);
+      },
       flyTo(center, zoom = 15.5) {
         mapRef.current?.flyTo({
           center,
           zoom,
-          duration: 1200,
+          duration: reduced() ? 0 : 1200,
           essential: false,
-          padding: { left: 200, right: 160, top: 0, bottom: 0 },
+          padding:
+            window.innerWidth < 900
+              ? { left: 0, right: 0, top: 0, bottom: 130 }
+              : { left: 290, right: 350, top: 0, bottom: 0 },
         });
       },
       camera() {
@@ -135,11 +243,11 @@ export const MapView = forwardRef<MapHandle, Props>(
           zoom: camera?.zoom ?? 14.1,
           pitch: camera?.pitch ?? 48,
           bearing: camera?.bearing ?? -17,
-          minZoom: 12.5,
+          minZoom: 10.8,
           maxZoom: 19,
           maxBounds: [
-            [77.18, 28.595],
-            [77.28, 28.7],
+            [77.14, 28.49],
+            [77.31, 28.71],
           ],
           canvasContextAttributes: {
             antialias: true,
@@ -169,13 +277,51 @@ export const MapView = forwardRef<MapHandle, Props>(
         return;
       }
       mapRef.current = m;
+      m.on("movestart", () => {
+        if (container.current) container.current.dataset.settled = "false";
+      });
+      m.on("idle", () => {
+        if (container.current) {
+          container.current.dataset.settled = "true";
+          container.current.dataset.visibleBuildings = String(
+            m.getLayer("buildings")
+              ? m.queryRenderedFeatures({ layers: ["buildings"] }).length
+              : 0,
+          );
+        }
+      });
       m.on("error", (e) => {
         console.error("Map error:", e.error.message);
         setError(e.error.message);
       });
       m.on("load", () => {
         const data = latest.current.data;
-        m.addSource("city", { type: "geojson", data, promoteId: "id" });
+        const renderData: FeatureCollection = {
+          type: "FeatureCollection",
+          features: data.features.map((f) => ({
+            type: "Feature",
+            geometry: f.geometry,
+            properties: {
+              id: f.properties.id,
+              kind: f.properties.kind,
+              name: f.properties.name,
+              use: f.properties.use,
+              area_m2: f.properties.area_m2,
+              height_m: f.properties.height_m,
+              min_height_m: f.properties.min_height_m,
+              road_type: f.properties.road_type,
+              rail_type: f.properties.rail_type,
+              recorded_year: recordedYear(f.properties.start_date),
+            },
+          })),
+        };
+        m.addSource("city", {
+          type: "geojson",
+          data: renderData,
+          promoteId: "id",
+          tolerance: 0.3,
+          maxzoom: 17,
+        });
         m.addSource("pilot", { type: "geojson", data: PILOT });
         m.addSource("study", { type: "geojson", data: empty });
         m.addSource("draft", { type: "geojson", data: empty });
@@ -275,6 +421,55 @@ export const MapView = forwardRef<MapHandle, Props>(
             "fill-extrusion-base": 0,
             "fill-extrusion-opacity": 0.96,
             "fill-extrusion-vertical-gradient": true,
+          },
+        });
+        m.addLayer({
+          id: "building-parts",
+          type: "fill-extrusion",
+          source: "city",
+          filter: [
+            "all",
+            ["==", ["get", "kind"], "buildingpart"],
+            [">", ["coalesce", ["get", "height_m"], 0], 0],
+          ],
+          paint: {
+            "fill-extrusion-color": "#b39476",
+            "fill-extrusion-height": ["coalesce", ["get", "height_m"], 8],
+            "fill-extrusion-base": ["coalesce", ["get", "min_height_m"], 0],
+            "fill-extrusion-opacity": 0.96,
+          },
+        });
+        m.addLayer({
+          id: "trees",
+          type: "circle",
+          source: "city",
+          filter: ["==", "kind", "tree"],
+          minzoom: 15,
+          paint: {
+            "circle-radius": [
+              "interpolate",
+              ["linear"],
+              ["zoom"],
+              15,
+              2,
+              18,
+              6,
+            ],
+            "circle-color": "#6d9479",
+            "circle-opacity": 0.65,
+          },
+        });
+        m.addLayer({
+          id: "places",
+          type: "circle",
+          source: "city",
+          filter: ["==", "kind", "place"],
+          minzoom: 16,
+          paint: {
+            "circle-radius": 3,
+            "circle-color": "#7f7770",
+            "circle-stroke-color": "#fffdf7",
+            "circle-stroke-width": 1,
           },
         });
         m.addLayer({
@@ -383,8 +578,47 @@ export const MapView = forwardRef<MapHandle, Props>(
           new maplibregl.ScaleControl({ maxWidth: 100, unit: "metric" }),
           "bottom-left",
         );
+        const contextLabels: maplibregl.Marker[] = [];
+        let labelTime = 0;
+        const labels = () => {
+          if (performance.now() - labelTime < 1200) return;
+          labelTime = performance.now();
+          contextLabels.forEach((label) => label.remove());
+          contextLabels.length = 0;
+          if (m.getZoom() < 15.5) return;
+          const names = new Set<string>();
+          for (const feature of data.features) {
+            const p = feature.properties;
+            if (
+              !p.name ||
+              !p.center ||
+              names.has(p.name) ||
+              !["road", "place", "building"].includes(p.kind) ||
+              !m.getBounds().contains(p.center)
+            )
+              continue;
+            if (p.kind === "road" && !latest.current.layers.streets) continue;
+            if (p.kind === "building" && !latest.current.layers.buildings)
+              continue;
+            names.add(p.name);
+            const el = document.createElement("span");
+            el.className = "context-map-label";
+            el.textContent = p.name;
+            contextLabels.push(
+              new maplibregl.Marker({ element: el })
+                .setLngLat(p.center)
+                .addTo(m),
+            );
+            if (contextLabels.length >= 24) break;
+          }
+        };
+        m.on("moveend", labels);
+        labels();
         setReady(true);
-        latest.current.onReady();
+        m.once("idle", () => {
+          latest.current.onReady();
+          reveal();
+        });
       });
       m.on("click", (e) => {
         if (latest.current.drawMode) {
@@ -393,7 +627,7 @@ export const MapView = forwardRef<MapHandle, Props>(
         }
         if (!m.getLayer("buildings")) return;
         const features = m.queryRenderedFeatures(e.point, {
-          layers: ["buildings", "buildings-flat", "station"],
+          layers: ["buildings", "buildings-flat", "station", "places"],
         });
         const id = features[0]?.properties?.id;
         const feature = latest.current.data.features.find(
@@ -408,13 +642,22 @@ export const MapView = forwardRef<MapHandle, Props>(
         }
         if (!m.getLayer("buildings")) return;
         m.getCanvas().style.cursor = m.queryRenderedFeatures(e.point, {
-          layers: ["buildings", "station"],
+          layers: ["buildings", "buildings-flat", "station", "places"],
         }).length
           ? "pointer"
           : "";
       });
+      const interrupt = () => {
+        stopMotion();
+        latest.current.onMotionInterrupted();
+      };
+      m.on("mousedown", interrupt);
+      m.on("touchstart", interrupt);
+      m.on("wheel", interrupt);
       m.on("pitchend", () => set3d(m.getPitch() > 0));
       return () => {
+        cancelAnimationFrame(orbitFrame.current);
+        cancelAnimationFrame(revealFrame.current);
         markers.current = [];
         m.remove();
         mapRef.current = null;
@@ -437,19 +680,33 @@ export const MapView = forwardRef<MapHandle, Props>(
         ids.forEach((id) =>
           m.setLayoutProperty(id, "visibility", show ? "visible" : "none"),
         );
-      visibility(["buildings", "buildings-flat"], layers.buildings);
-      visibility(["water", "green"], layers.landscape);
+      visibility(
+        ["buildings", "buildings-flat", "building-parts"],
+        layers.buildings,
+      );
+      visibility(["water", "green", "trees"], layers.landscape);
       visibility(["rail", "station"], layers.transit);
       visibility(["roads", "road-casing"], layers.streets);
       const colour =
-        theme === "footprint" ? footprint : theme === "use" ? usage : height;
+        theme === "era"
+          ? era
+          : theme === "footprint"
+            ? footprint
+            : theme === "use"
+              ? usage
+              : height;
       m.setPaintProperty("buildings", "fill-extrusion-color", [
         "case",
         ["boolean", ["feature-state", "selected"], false],
         "#e5a83e",
         colour,
       ]);
-      m.setPaintProperty("buildings-flat", "fill-color", colour);
+      m.setPaintProperty("buildings-flat", "fill-color", [
+        "case",
+        ["boolean", ["feature-state", "selected"], false],
+        "#e5a83e",
+        colour,
+      ]);
       const conditions: FilterSpecification = [
         "all",
         ["==", "kind", "building"],
@@ -486,8 +743,24 @@ export const MapView = forwardRef<MapHandle, Props>(
       markers.current.forEach(({ id, marker }) => {
         const h = HERITAGE.find((h) => h.id === id)!;
         marker.getElement().style.display =
-          layers.heritage && h.year <= year ? "" : "none";
+          layers.heritage &&
+          h.year <= year &&
+          (props.lens === "all" || h.lenses?.includes(props.lens))
+            ? ""
+            : "none";
         marker.getElement().classList.toggle("active", selectedId === id);
+        marker
+          .getElement()
+          .style.setProperty(
+            "--era-color",
+            h.year < 1700
+              ? "#9d5d55"
+              : h.year < 1947
+                ? "#c28b53"
+                : h.year < 2000
+                  ? "#6e9989"
+                  : "#6b8caf",
+          );
         marker.getElement().style.pointerEvents = drawMode ? "none" : "";
       });
     }, [ready, props]);

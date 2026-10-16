@@ -36,8 +36,14 @@ import {
   PanelLeftOpen,
 } from "lucide-react";
 import turfArea from "@turf/area";
+import bbox from "@turf/bbox";
 import circle from "@turf/circle";
 import { MapView, type MapHandle } from "./components/MapView";
+import { CinematicControls } from "./components/CinematicControls";
+import { HeritagePhoto, HeritageDetails } from "./components/HeritageProfile";
+import { BuildingProfile } from "./components/BuildingProfile";
+import { loadCity } from "./lib/loadData";
+import { centerOf } from "./lib/buildings";
 import { Modal } from "./components/Modal";
 import {
   AREAS,
@@ -55,6 +61,8 @@ import type {
   CityData,
   CityFeature,
   Heritage,
+  HeritageLens,
+  Overview,
   Layers,
   Manifest,
   Mode,
@@ -136,6 +144,7 @@ function Summary({
 }
 export default function App() {
   const [data, setData] = useState<CityData | null>(null);
+  const [overview, setOverview] = useState<Overview | null>(null);
   const [manifest, setManifest] = useState<Manifest | null>(null);
   const [loadError, setLoadError] = useState("");
   const [mode, setMode] = useState<Mode>(initial?.mode ?? "explore");
@@ -147,7 +156,10 @@ export default function App() {
   const [area, setArea] = useState<StudyArea | null>(initial?.area ?? null);
   const [areaName, setAreaName] = useState(initial?.areaName ?? "Whole pilot");
   const [selected, setSelected] = useState<CityFeature | Heritage | null>(null);
-  const [year, setYear] = useState(initial?.year ?? 1950);
+  const [year, setYear] = useState(initial?.year ?? 2026);
+  const [lens, setLens] = useState<HeritageLens>(initial?.lens ?? "all");
+  const [motionInterrupt, setMotionInterrupt] = useState(0);
+  const [directoryOpen, setDirectoryOpen] = useState(false);
   const [playing, setPlaying] = useState(false);
   const [modal, setModal] = useState<
     "sources" | "export" | "table" | "share" | null
@@ -172,7 +184,13 @@ export default function App() {
   const searchBox = useRef<HTMLDivElement>(null);
   const closeModal = useCallback(() => setModal(null), []);
   const study = area ?? PILOT;
-  const analysis = useAnalysis(data, study, size);
+  const analysis = useAnalysis(
+    data,
+    study,
+    size,
+    !!data && !!overview,
+    area === null ? overview : null,
+  );
   const comparisonA = AREAS.find((a) => a.id === compareIds[0])!;
   const comparisonB = AREAS.find((a) => a.id === compareIds[1])!;
   const compareA = useAnalysis(
@@ -196,22 +214,31 @@ export default function App() {
   useEffect(() => {
     const controller = new AbortController();
     Promise.all([
-      fetch(`${import.meta.env.BASE_URL}data/delhi.geojson`, {
+      loadCity(controller.signal),
+      fetch(`${import.meta.env.BASE_URL}data/overview.json`, {
         signal: controller.signal,
+      }).then((r) => {
+        if (!r.ok) throw new Error("The analysis overview is unavailable.");
+        return r.json();
       }),
       fetch(`${import.meta.env.BASE_URL}data/manifest.json`, {
         signal: controller.signal,
+      }).then((r) => {
+        if (!r.ok) throw new Error("The dataset manifest is unavailable.");
+        return r.json();
       }),
     ])
-      .then(async (responses) => {
-        if (responses.some((r) => !r.ok))
-          throw new Error("The bundled map dataset could not be loaded.");
-        const [city, meta] = (await Promise.all(
-          responses.map((r) => r.json()),
-        )) as [CityData, Manifest];
+      .then(([city, summary, meta]: [CityData, Overview, Manifest]) => {
+        if (summary.dataset !== meta.id)
+          throw new Error(
+            "Dataset versions differ. Refresh to load the latest map.",
+          );
+        setOverview(summary);
         city.features.forEach((f) => {
-          if (f.properties.kind === "building")
+          if (f.properties.kind === "building") {
             f.properties.area_m2 = turfArea(f);
+            f.bbox = bbox(f);
+          }
         });
         setData(city);
         setManifest(meta);
@@ -234,11 +261,11 @@ export default function App() {
     const t = setInterval(
       () =>
         setYear((y) => {
-          if (y >= 1950) {
+          if (y >= 2026) {
             setPlaying(false);
-            return 1950;
+            return 2026;
           }
-          return y + 5;
+          return Math.min(2026, y + 10);
         }),
       180,
     );
@@ -247,6 +274,8 @@ export default function App() {
   useEffect(() => {
     const handle = (e: KeyboardEvent) => {
       if (e.key === "Escape" && !document.querySelector('[role="dialog"]')) {
+        setMotionInterrupt((i) => i + 1);
+        setPlaying(false);
         setSearching(false);
         setDrawMode(null);
         setDrawPoints([]);
@@ -292,19 +321,21 @@ export default function App() {
       data?.features
         .filter(
           (f) =>
-            f.properties.name &&
-            ["building", "station"].includes(f.properties.kind) &&
-            (f.properties.name.toLowerCase().includes(q) ||
-              f.properties.id.includes(q)),
+            ["building", "station", "place"].includes(f.properties.kind) &&
+            ((!!f.properties.name &&
+              f.properties.name.toLowerCase().includes(q)) ||
+              (!!q && f.properties.id.includes(q))),
         )
         .slice(0, 8)
         .map((f) => ({
           id: f.properties.id,
-          name: f.properties.name,
+          name: f.properties.name || `Building ${f.properties.id}`,
           sub:
             f.properties.kind === "station"
               ? "Station record · OSM"
-              : "Building · OSM",
+              : f.properties.kind === "place"
+                ? "Place · OSM"
+                : "Building · OSM",
           item: f,
         })) ?? [];
     return [...landmarks, ...buildings].slice(0, 8);
@@ -321,19 +352,22 @@ export default function App() {
   const heritageSelection = selected && "story" in selected ? selected : null;
   const featureSelection =
     selected && "properties" in selected ? selected : null;
-  function selectHeritage(id: string) {
+  function selectHeritage(id: string, fromTour = false) {
+    if (!fromTour) setMotionInterrupt((i) => i + 1);
     setPlaying(false);
     if (window.innerWidth < 900) setPanelOpen(false);
     const h = HERITAGE.find((h) => h.id === id)!;
+    setLens("all");
     setSelected(h);
     setLayers((l) => ({ ...l, heritage: true }));
-    setYear((y) => Math.max(y, h.year));
+    setYear((y) => (fromTour ? h.year : Math.max(y, h.year)));
     map.current?.flyTo(h.coords, 16.1);
     setQuery("");
     setSearching(false);
   }
   function selectFeature(feature: CityFeature, fly = false) {
     if (window.innerWidth < 900) setPanelOpen(false);
+    setMotionInterrupt((i) => i + 1);
     setSelected(feature);
     setSearching(false);
     setQuery("");
@@ -349,16 +383,10 @@ export default function App() {
       buildings: feature.properties.kind === "building" ? true : l.buildings,
       transit: feature.properties.kind === "station" ? true : l.transit,
     }));
-    if (fly) {
-      const g = feature.geometry;
-      let p: number[] | undefined;
-      if (g.type === "Point") p = g.coordinates;
-      else if (g.type === "Polygon") p = g.coordinates[0][0];
-      else if (g.type === "MultiPolygon") p = g.coordinates[0][0][0];
-      if (p) map.current?.flyTo([p[0], p[1]], 17);
-    }
+    if (fly) map.current?.flyTo(centerOf(feature), 17);
   }
   function chooseArea(id: string) {
+    setMotionInterrupt((i) => i + 1);
     const a = AREAS.find((a) => a.id === id)!;
     setArea(id === "pilot" ? null : a.area);
     setAreaName(a.name);
@@ -415,6 +443,7 @@ export default function App() {
       theme,
       size,
       layers,
+      lens,
       year,
       mode,
       area,
@@ -476,7 +505,7 @@ export default function App() {
         );
       if (kind === "brief") {
         const r = analysis.result;
-        const text = `# Delhi Atlas — ${areaName}\n\nDataset: ${manifest.id}\nSource: ${manifest.source_url}\nAttribution: ${manifest.attribution}; ${manifest.licence}\nFootprint filter: ${size}\n\n- Mapped buildings intersecting study: ${r.count}\n- Study extent inside pilot: ${fmt(r.areaM2, 2)} m²\n- Unioned footprint area inside study: ${fmt(r.footprintM2, 2)} m²\n- Footprint coverage of study extent (including water): ${fmt(r.coverage, 2)}%\n- Buildings with a recorded or estimated height: ${r.knownHeightCount} (${r.estimatedHeightCount} estimated from levels)\n- Buildings with unknown height: ${r.unknownHeightCount}\n\nThis is a historical, incomplete OSM snapshot, not a current survey. Coverage is not FAR. Unknown heights use uniform 8 m display only; they are excluded from height statistics. Study windows are not administrative boundaries.\n\n## Reproduce\n\nUse the exported study boundary, same dataset and filter. The GeoJSON export contains clipped footprints; the CSV includes full and clipped areas.\n\nStudy boundary (WGS 84):\n\n\`\`\`json\n${JSON.stringify(study)}\n\`\`\`\n`;
+        const text = `# Delhi Atlas — ${areaName}\n\nDataset: ${manifest.id}\nSource: ${manifest.source_url}\nAttribution: ${manifest.attribution}; ${manifest.licence}\nFootprint filter: ${size}\n\n- Mapped buildings intersecting study: ${r.count}\n- Study extent inside pilot: ${fmt(r.areaM2, 2)} m²\n- Unioned footprint area inside study: ${fmt(r.footprintM2, 2)} m²\n- Footprint coverage of study extent (including water): ${fmt(r.coverage, 2)}%\n- Buildings with a recorded or estimated height: ${r.knownHeightCount} (${r.estimatedHeightCount} estimated from levels)\n- Buildings with unknown height: ${r.unknownHeightCount}\n\nThis is an incomplete OpenStreetMap snapshot, not a cadastral or measured building survey. Coverage is not FAR. Unknown heights use uniform 8 m display only; they are excluded from height statistics. Study windows are not administrative boundaries.\n\n## Reproduce\n\nUse the exported study boundary, same dataset and filter. The GeoJSON export contains clipped footprints; the CSV includes full and clipped areas.\n\nStudy boundary (WGS 84):\n\n\`\`\`json\n${JSON.stringify(study)}\n\`\`\`\n`;
         download(
           new Blob([text], { type: "text/markdown" }),
           filename + "-brief.md",
@@ -519,7 +548,7 @@ export default function App() {
           y + 58,
         );
         ctx.fillText(
-          `© OpenStreetMap contributors · ODbL 1.0 · Archival / incomplete coverage · Unknown heights: 8 m display only`,
+          `© OpenStreetMap contributors · ODbL 1.0 · OSM / incomplete coverage · Unknown heights: 8 m display only`,
           24,
           y + 80,
         );
@@ -539,11 +568,21 @@ export default function App() {
                   "Institutional / transit",
                   "Unknown / other",
                 ]
-              : ["Under 10 m", "10–20 m", "20–40 m", "Over 40 m", "Unknown"];
+              : theme === "era"
+                ? [
+                    "Before 1700",
+                    "1700–1946",
+                    "1947–1999",
+                    "2000 onward",
+                    "Unrecorded date",
+                  ]
+                : ["Under 10 m", "10–20 m", "20–40 m", "Over 40 m", "Unknown"];
         const exportColours =
           theme === "use"
             ? ["#c89854", "#7b9585", "#bd7d62", "#607d89", "#c9c7b9"]
-            : [...colours, "#c9c7b9"];
+            : theme === "era"
+              ? ["#9d5d55", "#c28b53", "#6e9989", "#6b8caf", "#bfc4be"]
+              : [...colours, "#c9c7b9"];
         legend.forEach((l, i) => {
           ctx.fillStyle = exportColours[i];
           ctx.fillRect(
@@ -581,7 +620,7 @@ export default function App() {
     {
       key: "heritage",
       name: "Heritage & history",
-      desc: "7 curated places, with sources",
+      desc: `${HERITAGE.length} place profiles, with sources`,
       icon: Landmark,
     },
     {
@@ -671,6 +710,8 @@ export default function App() {
           <MapView
             ref={map}
             data={data}
+            lens={lens}
+            onMotionInterrupted={() => setMotionInterrupt((i) => i + 1)}
             layers={layers}
             theme={theme}
             size={size}
@@ -688,13 +729,19 @@ export default function App() {
             initialCamera={initial?.camera}
           />
         )}
+        <CinematicControls
+          map={map}
+          ready={mapReady}
+          onSite={(id) => selectHeritage(id, true)}
+          interrupt={motionInterrupt}
+        />
         {(!data || !mapReady) && !loadError && (
           <div className="map-loading">
             <div className="loading-mark">
               d<span>·</span>
             </div>
             <strong>Reading the city</strong>
-            <span>Preparing the Delhi pilot…</span>
+            <span>Loading buildings, streets and places…</span>
             <LoaderCircle className="spin" size={20} />
           </div>
         )}
@@ -727,7 +774,7 @@ export default function App() {
         >
           <div className="panel-intro">
             <div className="eyebrow">
-              <span className="status-dot" /> CENTRAL DELHI / PILOT 01
+              <span className="status-dot" /> DELHI / URBAN ATLAS
             </div>
             <h1>Read the city.</h1>
             <p>
@@ -804,13 +851,64 @@ export default function App() {
               </button>
             ))}
           </div>
+          <section className="heritage-lenses">
+            <div className="section-heading">
+              <span>HISTORY LENSES</span>
+            </div>
+            <div className="lens-buttons">
+              {(
+                [
+                  ["all", "All stories"],
+                  ["mughal", "Mughal"],
+                  ["sacred", "Sacred"],
+                  ["civic", "Civic"],
+                  ["water", "Water & gardens"],
+                ] as [HeritageLens, string][]
+              ).map(([id, label]) => (
+                <button
+                  key={id}
+                  aria-pressed={lens === id}
+                  className={lens === id ? "active" : ""}
+                  onClick={() => {
+                    setLens(id);
+                    setLayers((l) => ({ ...l, heritage: true }));
+                  }}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+            <button
+              className="directory-toggle"
+              aria-expanded={directoryOpen}
+              onClick={() => setDirectoryOpen(!directoryOpen)}
+            >
+              Browse {HERITAGE.length} landmark profiles{" "}
+              <ChevronDown size={14} />
+            </button>
+            {directoryOpen && (
+              <div className="landmark-directory">
+                {HERITAGE.filter(
+                  (h) => lens === "all" || h.lenses?.includes(lens),
+                ).map((h) => (
+                  <button key={h.id} onClick={() => selectHeritage(h.id)}>
+                    <span>
+                      {h.name}
+                      <small>{h.dateLabel}</small>
+                    </span>
+                    <ChevronRight size={13} />
+                  </button>
+                ))}
+              </div>
+            )}
+          </section>
           <div className="colour-section">
             <div className="section-heading">
               <span>COLOUR BUILDINGS BY</span>
               <SlidersHorizontal size={13} />
             </div>
             <div className="segmented">
-              {(["footprint", "use", "height"] as Theme[]).map((t) => (
+              {(["footprint", "use", "height", "era"] as Theme[]).map((t) => (
                 <button
                   key={t}
                   className={theme === t ? "active" : ""}
@@ -820,7 +918,9 @@ export default function App() {
                     ? "Footprint"
                     : t === "use"
                       ? "Use"
-                      : "Height"}
+                      : t === "height"
+                        ? "Height"
+                        : "Date"}
                 </button>
               ))}
             </div>
@@ -834,7 +934,9 @@ export default function App() {
                       "Religious",
                       "Institutional / transit",
                     ]
-                  : ["Under 10 m", "10–20 m", "20–40 m", "Over 40 m"]
+                  : theme === "era"
+                    ? ["Before 1700", "1700–1946", "1947–1999", "2000 onward"]
+                    : ["Under 10 m", "10–20 m", "20–40 m", "Over 40 m"]
               ).map((label, i) => (
                 <div key={label}>
                   <span
@@ -843,7 +945,9 @@ export default function App() {
                       background:
                         theme === "use"
                           ? ["#c89854", "#7b9585", "#bd7d62", "#607d89"][i]
-                          : colours[i],
+                          : theme === "era"
+                            ? ["#9d5d55", "#c28b53", "#6e9989", "#6b8caf"][i]
+                            : colours[i],
                     }}
                   />
                   <span>{label}</span>
@@ -881,18 +985,20 @@ export default function App() {
               <ChevronDown size={15} />
             </div>
             <p className="micro-note">
-              {theme === "height"
-                ? `Only ${heightCount} records have height estimates. Grey means unknown.`
-                : theme === "use"
-                  ? "OSM building tags; unclassified footprints remain unknown."
-                  : "Footprint area, not floor area. Legend counts follow the selected study area."}
+              {theme === "era"
+                ? "Dates come only from recorded OSM start dates. Grey buildings have no usable date; nearby monuments do not date them."
+                : theme === "height"
+                  ? `Only ${heightCount} records have height estimates. Grey means unknown.`
+                  : theme === "use"
+                    ? "OSM building tags; unclassified footprints remain unknown."
+                    : "Footprint area, not floor area. Legend counts follow the selected study area."}
             </p>
           </div>
           <button className="data-note" onClick={() => setModal("sources")}>
             <span className="data-dot" />
             <span>
               <strong>
-                {manifest?.snapshot.slice(0, 4) ?? "2017"} archival snapshot
+                {manifest?.snapshot.slice(0, 4) ?? "—"} OSM snapshot
               </strong>
               <small>Understand coverage & limitations</small>
             </span>
@@ -905,11 +1011,11 @@ export default function App() {
             <ChevronRight size={11} />
             <strong>Delhi NCT</strong>
             <ChevronRight size={11} />
-            <span>Central pilot</span>
+            <span>Urban core</span>
           </div>
           <div className="map-caption">
             <span className="archive-tag">
-              {manifest?.snapshot.slice(0, 4)} ARCHIVE
+              {manifest?.snapshot.slice(0, 4)} OSM
             </span>
             <span className="live-dot" />
             {fmt(visibleCount)} footprints
@@ -973,18 +1079,7 @@ export default function App() {
               </div>
               {heritageSelection ? (
                 <>
-                  <div className="heritage-illustration" aria-hidden="true">
-                    <svg viewBox="0 0 280 110">
-                      <path
-                        d="M0 92H280M20 92V47H260V92M26 47V35H40V47M240 47V35H254V47M60 47V29H220V47M67 29V20H79V29M202 29V20H214V29M115 47V22Q140 -4 165 22V47M115 92V66Q140 38 165 66V92M37 92V71Q47 54 57 71V92M75 92V71Q85 54 95 71V92M185 92V71Q195 54 205 71V92M223 92V71Q233 54 243 71V92"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="1.5"
-                      />
-                      <path d="M12 100H268M140 4V-4" stroke="currentColor" />
-                    </svg>
-                    <span>ARCHITECTURAL MOTIF / ILLUSTRATION</span>
-                  </div>
+                  <HeritagePhoto site={heritageSelection} />
                   <div className="detail-body">
                     <span className="pill">{heritageSelection.type}</span>
                     <h2>{heritageSelection.name}</h2>
@@ -992,13 +1087,19 @@ export default function App() {
                       {heritageSelection.hindi}
                     </p>
                     <div className="heritage-date">
-                      <strong>{heritageSelection.year}</strong>
+                      <strong>
+                        {heritageSelection.datePrecision === "approximate"
+                          ? "c. "
+                          : ""}
+                        {heritageSelection.year}
+                      </strong>
                       <span>
                         {heritageSelection.period}
                         <small>{heritageSelection.dateLabel}</small>
                       </span>
                     </div>
                     <p className="story">{heritageSelection.story}</p>
+                    <HeritageDetails site={heritageSelection} />
                     <a
                       className="source-link"
                       href={heritageSelection.source}
@@ -1009,9 +1110,9 @@ export default function App() {
                       <ExternalLink size={13} />
                     </a>
                     <p className="micro-note">
-                      Curated summary. Approximate place marker, not a verified
-                      building-footprint match. Date describes the documented
-                      site.
+                      A sourced place profile. The marker is an approximate site
+                      location, not a surveyed footprint. The date describes the
+                      stated milestone; nearby buildings may be much newer.
                     </p>
                     <button
                       className="secondary-button full"
@@ -1038,7 +1139,9 @@ export default function App() {
                     <span className="pill">
                       {featureSelection.properties.kind === "station"
                         ? "Station record"
-                        : "Building footprint"}
+                        : featureSelection.properties.kind === "place"
+                          ? "Mapped place"
+                          : "Building footprint"}
                     </span>
                     <h2>
                       {featureSelection.properties.name ||
@@ -1067,7 +1170,7 @@ export default function App() {
                         <dd>
                           {featureSelection.properties.height_m === null
                             ? "Unknown"
-                            : `${featureSelection.properties.height_m} m (estimate)`}
+                            : `${featureSelection.properties.height_m} m (${featureSelection.properties.height_method.startsWith("Estimated:") ? "storey estimate" : "OSM tag"})`}
                         </dd>
                       </div>
                       <div>
@@ -1099,6 +1202,10 @@ export default function App() {
                       The current online record may differ from this bundled
                       snapshot.
                     </p>
+                    <BuildingProfile
+                      feature={featureSelection}
+                      onHeritage={selectHeritage}
+                    />
                   </div>
                 )
               )}
@@ -1391,7 +1498,8 @@ export default function App() {
                 playing ? "Pause heritage timeline" : "Play heritage timeline"
               }
               onClick={() => {
-                if (year >= 1950) setYear(1600);
+                setMotionInterrupt((i) => i + 1);
+                if (year >= 2026) setYear(1190);
                 if (!playing) setSelected(null);
                 setPlaying(!playing);
               }}
@@ -1402,7 +1510,7 @@ export default function App() {
               <strong>Heritage milestones</strong>
               <span>
                 {layers.heritage
-                  ? `${HERITAGE.filter((h) => h.year <= year).length} of 7 curated sites`
+                  ? `${HERITAGE.filter((h) => h.year <= year && (lens === "all" || h.lenses?.includes(lens))).length} / ${HERITAGE.length} sites · dates vary`
                   : "Enable the heritage layer"}
               </span>
             </div>
@@ -1413,7 +1521,7 @@ export default function App() {
                     key={h.id}
                     className={h.year <= year ? "lit" : ""}
                     style={{
-                      left: `${((h.year - 1600) / 350) * 100}%`,
+                      left: `${((h.year - 1190) / 836) * 100}%`,
                       height: "24px",
                     }}
                   />
@@ -1421,13 +1529,14 @@ export default function App() {
               </div>
               <input
                 type="range"
-                min="1600"
-                max="1950"
+                min="1190"
+                max="2026"
                 step="1"
                 value={year}
                 disabled={!layers.heritage}
                 aria-label="Heritage completion year"
                 onChange={(e) => {
+                  setMotionInterrupt((i) => i + 1);
                   setYear(Number(e.target.value));
                   setPlaying(false);
                   if (
@@ -1438,15 +1547,15 @@ export default function App() {
                 }}
               />
               <div className="timeline-ticks">
-                <span>1600</span>
-                <span>1700</span>
+                <span>1190</span>
+                <span>1500</span>
                 <span>1800</span>
-                <span>1950</span>
+                <span>2026</span>
               </div>
             </div>
             <div className="timeline-year">
               <strong>{year}</strong>
-              <span>documented by</span>
+              <span>milestones by</span>
             </div>
             <button
               className="icon-button timeline-info"
@@ -1463,7 +1572,7 @@ export default function App() {
           <div className="map-footer">
             <span>
               © OpenStreetMap contributors · ODbL · Snapshot{" "}
-              {manifest?.snapshot.slice(0, 10) ?? "2017-08-15"}
+              {manifest?.snapshot.slice(0, 10) ?? "—"}
             </span>
             <span>Drag to pan · Right-drag to rotate · Scroll to zoom</span>
           </div>
@@ -1530,10 +1639,10 @@ export default function App() {
           <div className="source-card">
             <h3>Buildings, streets, landscape & transit</h3>
             <p>
-              © OpenStreetMap contributors. Extract mirrored in Hassan Khan’s
-              New Delhi data-wrangling repository; pinned to commit{" "}
-              <code>0d85639</code>. Geometry was repaired where possible and
-              clipped to the pilot for contextual layers.
+              © OpenStreetMap contributors. Extracted from Geofabrik’s Northern
+              Zone download dated {manifest?.snapshot.slice(0, 10)}. The
+              upstream checksum was verified. Geometry was validated and
+              contextual layers were clipped to the study extent.
             </p>
             <div className="source-links">
               <a href={manifest?.source_url} target="_blank" rel="noreferrer">
@@ -1562,6 +1671,33 @@ export default function App() {
             </div>
           </div>
           <div className="source-card">
+            <h3>What the building records contain</h3>
+            <dl className="facts">
+              <div>
+                <dt>Named buildings</dt>
+                <dd>{fmt(manifest?.building_attributes?.name ?? 0)}</dd>
+              </div>
+              <div>
+                <dt>Height or storeys</dt>
+                <dd>{fmt(heightCount)}</dd>
+              </div>
+              <div>
+                <dt>Recorded construction dates</dt>
+                <dd>{fmt(manifest?.building_attributes?.start_date ?? 0)}</dd>
+              </div>
+              <div>
+                <dt>Mapped places</dt>
+                <dd>{fmt(manifest?.counts.place ?? 0)}</dd>
+              </div>
+            </dl>
+            <p>
+              Government and heritage sources inform the curated profiles.
+              General building tags come from OpenStreetMap; linked encyclopedia
+              introductions are separately attributed under CC BY-SA 4.0.
+              Missing attributes are not inferred from nearby landmarks.
+            </p>
+          </div>
+          <div className="source-card">
             <h3>Height is mostly unknown</h3>
             <p>
               Only {heightCount} of {fmt(manifest?.counts.building ?? 0)}{" "}
@@ -1576,9 +1712,13 @@ export default function App() {
             <p>
               Seven approximate place markers link to their cited sources. Dates
               describe completion or construction of the named site, not every
-              footprint nearby. The timeline filters these seven sites only; it
-              does not reconstruct historical Delhi. Summaries require expert
-              review before professional publication.
+              footprint nearby. The timeline filters {HERITAGE.length} curated
+              sites and includes approximate dates and institutional milestones,
+              as labelled in each profile. It does not reconstruct historical
+              Delhi. The Date colour mode uses only OSM construction dates;
+              unrecorded dates stay grey. Profiles cite ASI, Ministry of
+              Tourism, Delhi Tourism and secondary sources. Architectural
+              readings are editorial interpretation.
             </p>
           </div>
           <div className="source-card">
@@ -1599,11 +1739,12 @@ export default function App() {
           <div className="source-card">
             <h3>Coverage before conclusions</h3>
             <p>
-              The pilot covers a rectangular study extent in Central Delhi, not
-              all Delhi NCT. Blank areas may be unmapped. Heritage markers are
-              an illustrative selection, not a complete inventory. Treat this
-              release as an exploration tool and verify findings against recent
-              surveys before using them in a planning decision.
+              The map covers an expanded rectangular urban-core extent from
+              Mehrauli to Old Delhi, not all Delhi NCT. Blank areas may be
+              unmapped. Heritage markers are an illustrative selection, not a
+              complete inventory. Treat this release as an exploration tool and
+              verify findings against recent surveys before using them in a
+              planning decision.
             </p>
           </div>
         </Modal>

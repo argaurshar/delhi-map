@@ -61,7 +61,7 @@ export function parseSavedView(hash: string): SavedView | null {
     )
       return null;
     if (
-      !["footprint", "use", "height"].includes(s.theme) ||
+      !["footprint", "use", "height", "era"].includes(s.theme) ||
       !["all", "small", "medium", "large"].includes(s.size) ||
       !["explore", "analyse", "compare"].includes(s.mode)
     )
@@ -73,7 +73,12 @@ export function parseSavedView(hash: string): SavedView | null {
       )
     )
       return null;
-    if (!Number.isFinite(s.year) || s.year < 1600 || s.year > 1950) return null;
+    if (!Number.isFinite(s.year) || s.year < 1190 || s.year > 2026) return null;
+    if (
+      s.lens &&
+      !["all", "mughal", "sacred", "civic", "water"].includes(s.lens)
+    )
+      return null;
     if (s.area) s.area = validateArea(s.area);
     if (
       s.comparison &&
@@ -90,11 +95,11 @@ export function parseSavedView(hash: string): SavedView | null {
         !Array.isArray(c.center) ||
         c.center.length !== 2 ||
         ![...c.center, c.zoom, c.pitch, c.bearing].every(Number.isFinite) ||
-        c.center[0] < 77.18 ||
-        c.center[0] > 77.28 ||
-        c.center[1] < 28.595 ||
-        c.center[1] > 28.7 ||
-        c.zoom < 12.5 ||
+        c.center[0] < 77.14 ||
+        c.center[0] > 77.31 ||
+        c.center[1] < 28.49 ||
+        c.center[1] > 28.71 ||
+        c.zoom < 10.8 ||
         c.zoom > 19 ||
         c.pitch < 0 ||
         c.pitch > 60 ||

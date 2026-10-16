@@ -1,34 +1,45 @@
 {
-  "id": "delhi-osm-2017-08-15",
-  "title": "Central Delhi \u00b7 OpenStreetMap snapshot",
-  "snapshot": "2017-08-15T12:24:01Z",
-  "archive": true,
+  "id": "delhi-osm-2026-10-15",
+  "title": "Delhi urban core \u00b7 OpenStreetMap snapshot",
+  "snapshot": "2026-10-15T20:21:00Z",
+  "archive": false,
   "bounds": [
-    77.2025,
-    28.618,
-    77.255,
-    28.677
+    77.17,
+    28.515,
+    77.285,
+    28.68
   ],
-  "source_url": "https://raw.githubusercontent.com/hassan23/OpenStreetMap-Project-New-Delhi/0d85639cbe08c65433b5cba697c7b2ac66b51169/NewDelhi.osm",
-  "source_sha256": "e821747e8c588bc2a14ff3a8681d020d7b6a5a032210a2a2d0c10aeffdc6626f",
+  "source_url": "https://download.geofabrik.de/asia/india/northern-zone.html",
+  "source_sha256": "0061d7d91f702ca7b10e2b78338c78a05a55fd460b3d27d2696d54ce5e24a992",
   "licence": "ODbL 1.0",
   "licence_url": "https://opendatacommons.org/licenses/odbl/1-0/",
   "attribution": "\u00a9 OpenStreetMap contributors",
   "counts": {
-    "building": 5185,
-    "green": 63,
-    "water": 12,
-    "road": 1695,
-    "rail": 296,
-    "station": 29
+    "building": 63676,
+    "buildingpart": 995,
+    "green": 2148,
+    "water": 210,
+    "road": 36882,
+    "rail": 1093,
+    "station": 94,
+    "tree": 2078,
+    "place": 7225
   },
-  "geometry_repairs": 1,
-  "skipped_incomplete_or_unsupported": 718,
+  "geometry_repairs": 0,
+  "skipped_incomplete_or_unsupported": 6,
   "notes": [
-    "Historical snapshot; not a current survey.",
+    "OpenStreetMap snapshot; not a cadastral or measured building survey.",
     "OSM mapping coverage is incomplete and uneven.",
     "Unknown heights use a uniform 8 m visual extrusion, excluded from measured-height statistics.",
     "Buildings outside the pilot that intersect its edge may be retained in full; study-area calculations clip to the pilot extent.",
     "Heritage points are a separate editorial layer, not verified footprint matches."
-  ]
+  ],
+  "building_attributes": {
+    "name": 1238,
+    "height_m": 3562,
+    "start_date": 16,
+    "levels": 3475
+  },
+  "upstream_file": "https://download.geofabrik.de/asia/india/northern-zone-261015.osm.pbf",
+  "upstream_sha256": "1051ae56eb0126a808c9363b8b211f12bd9333517825bb0d6b3262149d670fdc"
 }

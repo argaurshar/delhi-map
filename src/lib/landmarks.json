@@ -1,0 +1,1264 @@
+[
+  {
+    "id": "red-fort",
+    "name": "Red Fort",
+    "hindi": "लाल क़िला",
+    "period": "Mughal Delhi",
+    "type": "Fort complex",
+    "dateLabel": "Completed 1648",
+    "story": "Commissioned by Shah Jahan, the Red Fort anchored the new capital of Shahjahanabad. Its palaces, gardens and ceremonial spaces connect the walled city to the former riverfront. Read it alongside the streets and markets that grew around the imperial centre.",
+    "source": "https://asi.nic.in/pages/WorldHeritageRedFort",
+    "sourceName": "ASI · Red Fort",
+    "coords": [77.24083333, 28.65583333],
+    "year": 1648,
+    "datePrecision": "documented",
+    "facts": [
+      {
+        "label": "Patron",
+        "value": "Shah Jahan",
+        "source": 0
+      },
+      {
+        "label": "Construction",
+        "value": "1639–1648, according to ASI",
+        "source": 0
+      },
+      {
+        "label": "Materials",
+        "value": "Red sandstone in walls and gates; marble in palaces",
+        "source": 0
+      },
+      {
+        "label": "Spatial system",
+        "value": "Gate, bazaar, audience halls, palaces and water channels",
+        "source": 0
+      }
+    ],
+    "reading": "Read the sequence from Lahori Gate through Chhatta Chowk to the audience halls. The eastern pavilions and water channels formed an intentional riverfront palace landscape.",
+    "lenses": ["mughal"],
+    "sources": [
+      {
+        "title": "ASI · Red Fort",
+        "url": "https://asi.nic.in/pages/WorldHeritageRedFort",
+        "checked": "2026-10-16"
+      }
+    ],
+    "wikidata": "Q45957",
+    "photo": {
+      "path": "images/red-fort.jpg",
+      "author": "PerSona77",
+      "licence": "CC BY-SA 3.0",
+      "licenceUrl": "https://creativecommons.org/licenses/by-sa/3.0",
+      "page": "https://commons.wikimedia.org/wiki/File:Delhi_fort.jpg"
+    }
+  },
+  {
+    "id": "jama-masjid",
+    "name": "Jama Masjid",
+    "hindi": "जामा मस्जिद",
+    "period": "Mughal Delhi",
+    "type": "Mosque",
+    "dateLabel": "Completed 1656",
+    "story": "Shah Jahan’s congregational mosque occupies an elevated position in the walled city. The large courtyard, gateways and surrounding lanes offer a useful reading of monument scale against the finer grain of Shahjahanabad.",
+    "source": "https://www.incredibleindia.gov.in/en/delhi/delhi/jama-masjid",
+    "sourceName": "Ministry of Tourism · Jama Masjid",
+    "coords": [77.2334, 28.6507],
+    "year": 1656,
+    "datePrecision": "documented",
+    "facts": [
+      {
+        "label": "Patron",
+        "value": "Shah Jahan",
+        "source": 0
+      },
+      {
+        "label": "Construction",
+        "value": "1650–1656 in the Ministry of Tourism account",
+        "source": 0
+      },
+      {
+        "label": "Materials",
+        "value": "Red sandstone and marble",
+        "source": 0
+      },
+      {
+        "label": "Principal spaces",
+        "value": "Raised gateways, large courtyard and domed prayer hall",
+        "source": 0
+      }
+    ],
+    "reading": "Study the elevated plinth and steps against the fine-grained surrounding streets. Published accounts differ on the construction chronology; the timeline follows the Ministry of Tourism account.",
+    "lenses": ["mughal", "sacred"],
+    "sources": [
+      {
+        "title": "Ministry of Tourism · Jama Masjid",
+        "url": "https://www.incredibleindia.gov.in/en/delhi/delhi/jama-masjid",
+        "checked": "2026-10-16"
+      }
+    ],
+    "wikidata": "Q233678",
+    "photo": {
+      "path": "images/jama-masjid.jpg",
+      "author": "Bikashrd",
+      "licence": "CC BY-SA 4.0",
+      "licenceUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+      "page": "https://commons.wikimedia.org/wiki/File:Jama_Masjid_-_In_the_Noon.jpg"
+    }
+  },
+  {
+    "id": "fatehpuri",
+    "name": "Fatehpuri Masjid",
+    "hindi": "फ़तेहपुरी मस्जिद",
+    "period": "Mughal Delhi",
+    "type": "Mosque",
+    "dateLabel": "Built 1650",
+    "story": "At the western end of Chandni Chowk, Fatehpuri Masjid forms a major spatial anchor opposite the Red Fort. Its setting is especially useful for studying the relationship between religious institutions, commercial streets and public space.",
+    "source": "https://en.wikipedia.org/wiki/Fatehpuri_Mosque",
+    "sourceName": "Wikipedia · Fatehpuri Mosque",
+    "coords": [77.2225, 28.65666667],
+    "year": 1650,
+    "datePrecision": "documented",
+    "sources": [
+      {
+        "title": "Wikipedia · Fatehpuri Mosque",
+        "url": "https://en.wikipedia.org/wiki/Fatehpuri_Mosque",
+        "checked": "2026-10-16"
+      }
+    ],
+    "facts": [
+      {
+        "label": "Documented milestone",
+        "value": "Built 1650",
+        "source": 0
+      },
+      {
+        "label": "Building type",
+        "value": "Mosque",
+        "source": 0
+      }
+    ],
+    "reading": "Compare the building’s frontage, approach and open space with its surrounding street pattern. This is an editorial reading; detailed archival documentation remains to be verified.",
+    "lenses": ["sacred"],
+    "wikidata": "Q1110101",
+    "photo": {
+      "path": "images/fatehpuri.jpg",
+      "author": "Indrajit Das",
+      "licence": "CC BY-SA 4.0",
+      "licenceUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+      "page": "https://commons.wikimedia.org/wiki/File:Fatehpuri_Masjid_in_Delhi_19.jpg"
+    }
+  },
+  {
+    "id": "town-hall",
+    "name": "Delhi Town Hall",
+    "hindi": "टाउन हॉल",
+    "period": "Colonial Delhi",
+    "type": "Civic building",
+    "dateLabel": "Completed 1863",
+    "story": "The Town Hall introduced a colonial civic institution into the established fabric of Chandni Chowk. Its open foreground and formal frontage provide a contrasting urban condition within the dense commercial district.",
+    "source": "https://en.wikipedia.org/wiki/Delhi_Town_Hall",
+    "sourceName": "Wikipedia · Delhi Town Hall",
+    "coords": [77.2275, 28.6571],
+    "year": 1863,
+    "datePrecision": "documented",
+    "sources": [
+      {
+        "title": "Wikipedia · Delhi Town Hall",
+        "url": "https://en.wikipedia.org/wiki/Delhi_Town_Hall",
+        "checked": "2026-10-16"
+      }
+    ],
+    "facts": [
+      {
+        "label": "Documented milestone",
+        "value": "Completed 1863",
+        "source": 0
+      },
+      {
+        "label": "Building type",
+        "value": "Civic building",
+        "source": 0
+      }
+    ],
+    "reading": "Compare the building’s frontage, approach and open space with its surrounding street pattern. This is an editorial reading; detailed archival documentation remains to be verified.",
+    "lenses": ["civic"],
+    "wikidata": "Q16955686",
+    "photo": {
+      "path": "images/town-hall.jpg",
+      "author": "Varun Shiv Kapur from New Delhi, India",
+      "licence": "CC BY 2.0",
+      "licenceUrl": "https://creativecommons.org/licenses/by/2.0",
+      "page": "https://commons.wikimedia.org/wiki/File:Delhi_Town_Hall.jpg"
+    }
+  },
+  {
+    "id": "connaught-place",
+    "name": "Connaught Place",
+    "hindi": "कनॉट प्लेस",
+    "period": "Colonial Delhi",
+    "type": "Commercial precinct",
+    "dateLabel": "Completed 1933",
+    "story": "Designed as a commercial centre for New Delhi, Connaught Place uses concentric rings, radial streets and continuous colonnades. Compare its large, regular blocks with the smaller and less regular street network of Shahjahanabad.",
+    "source": "https://en.wikipedia.org/wiki/Connaught_Place,_New_Delhi",
+    "sourceName": "Wikipedia · Connaught Place",
+    "coords": [77.21972222, 28.63277778],
+    "year": 1933,
+    "datePrecision": "documented",
+    "sources": [
+      {
+        "title": "Wikipedia · Connaught Place",
+        "url": "https://en.wikipedia.org/wiki/Connaught_Place,_New_Delhi",
+        "checked": "Legacy reference; not revalidated in this release"
+      },
+      {
+        "title": "Wikipedia · Connaught Place, New Delhi",
+        "url": "https://en.wikipedia.org/wiki/Connaught_Place%2C_New_Delhi",
+        "checked": "2026-10-16"
+      }
+    ],
+    "facts": [
+      {
+        "label": "Documented milestone",
+        "value": "Completed 1933",
+        "source": 0
+      },
+      {
+        "label": "Building type",
+        "value": "Commercial precinct",
+        "source": 0
+      },
+      {
+        "label": "Architect",
+        "value": "Robert Tor Russell",
+        "source": 0
+      },
+      {
+        "label": "Construction",
+        "value": "1929–1933",
+        "source": 0
+      },
+      {
+        "label": "Urban composition",
+        "value": "Concentric commercial rings and radial streets",
+        "source": 0
+      }
+    ],
+    "reading": "Compare the building’s frontage, approach and open space with its surrounding street pattern. This is an editorial reading; detailed archival documentation remains to be verified.",
+    "lenses": ["civic"],
+    "wikidata": "Q2341950",
+    "photo": {
+      "path": "images/connaught-place.jpg",
+      "author": "Kabi1990",
+      "licence": "CC BY-SA 3.0",
+      "licenceUrl": "https://creativecommons.org/licenses/by-sa/3.0",
+      "page": "https://commons.wikimedia.org/wiki/File:Skyline_at_Rajiv_Chowk.JPG"
+    }
+  },
+  {
+    "id": "jantar-mantar",
+    "name": "Jantar Mantar",
+    "hindi": "जंतर मंतर",
+    "period": "Early modern Delhi",
+    "type": "Observatory",
+    "dateLabel": "Built 1724",
+    "story": "Jai Singh II’s astronomical observatory turns measurement into architecture. Its masonry instruments occupy an open site within today’s central city, offering a distinctive contrast between scientific landscape and surrounding urban development.",
+    "source": "https://delhitourism.gov.in/tourist_place/jantar_mantar.html",
+    "sourceName": "Delhi Tourism · Jantar Mantar",
+    "coords": [77.2164, 28.6271],
+    "year": 1724,
+    "datePrecision": "documented",
+    "facts": [
+      {
+        "label": "Patron",
+        "value": "Maharaja Jai Singh II",
+        "source": 0
+      },
+      {
+        "label": "Date",
+        "value": "1724",
+        "source": 0
+      },
+      {
+        "label": "Purpose",
+        "value": "Astronomical observation",
+        "source": 0
+      },
+      {
+        "label": "Form",
+        "value": "Large masonry instruments in an open compound",
+        "source": 0
+      }
+    ],
+    "reading": "Read each instrument as a piece of geometry designed for observation. Orientation and shadow are integral to its purpose, although this atlas does not simulate astronomical measurements.",
+    "lenses": ["civic"],
+    "sources": [
+      {
+        "title": "Delhi Tourism · Jantar Mantar",
+        "url": "https://delhitourism.gov.in/tourist_place/jantar_mantar.html",
+        "checked": "2026-10-16"
+      }
+    ],
+    "wikidata": "Q2045115",
+    "photo": {
+      "path": "images/jantar-mantar.jpg",
+      "author": "AKS.9955",
+      "licence": "CC BY-SA 4.0",
+      "licenceUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+      "page": "https://commons.wikimedia.org/wiki/File:Jantar_Mantar,_New_Delhi_(Misra_Yantra).jpg"
+    }
+  },
+  {
+    "id": "sacred-heart",
+    "name": "Sacred Heart Cathedral",
+    "hindi": "सेक्रेड हार्ट कैथेड्रल",
+    "period": "Colonial Delhi",
+    "type": "Cathedral",
+    "dateLabel": "Construction began 1930",
+    "story": "The cathedral is part of the institutional landscape of central New Delhi. Its formal approach, planted grounds and church building provide a counterpoint to the nearby commercial centre and government precincts.",
+    "source": "https://delhitourism.gov.in/tourist_place/spritual_delhi.html",
+    "sourceName": "Delhi Tourism · Sacred Heart Cathedral",
+    "coords": [77.206651, 28.628699],
+    "year": 1930,
+    "datePrecision": "milestone",
+    "sources": [
+      {
+        "title": "Delhi Tourism · Sacred Heart Cathedral",
+        "url": "https://delhitourism.gov.in/tourist_place/spritual_delhi.html",
+        "checked": "2026-10-16"
+      },
+      {
+        "title": "Wikipedia · Sacred Heart Cathedral",
+        "url": "https://en.wikipedia.org/wiki/Sacred_Heart_Cathedral,_New_Delhi",
+        "checked": "Legacy reference; not revalidated in this release"
+      },
+      {
+        "title": "Wikipedia · Sacred Heart Cathedral, New Delhi",
+        "url": "https://en.wikipedia.org/wiki/Sacred_Heart_Cathedral%2C_New_Delhi",
+        "checked": "2026-10-16"
+      }
+    ],
+    "facts": [
+      {
+        "label": "Architect",
+        "value": "Henry Medd",
+        "source": 0
+      },
+      {
+        "label": "Construction milestone",
+        "value": "Began in 1930; sources describe different later completion milestones",
+        "source": 1
+      },
+      {
+        "label": "Institution",
+        "value": "Catholic cathedral",
+        "source": 1
+      }
+    ],
+    "reading": "Compare the building’s frontage, approach and open space with its surrounding street pattern. This is an editorial reading; detailed archival documentation remains to be verified.",
+    "lenses": ["sacred"],
+    "photo": {
+      "path": "images/sacred-heart.jpg",
+      "author": "Maria Krüger",
+      "licence": "CC BY-SA 2.5",
+      "licenceUrl": "https://creativecommons.org/licenses/by-sa/2.5",
+      "page": "https://commons.wikimedia.org/wiki/File:Sacred_Heart_Cathedral_(New_Delhi).jpg"
+    },
+    "wikidata": "Q1089554"
+  },
+  {
+    "id": "india-gate",
+    "name": "India Gate",
+    "hindi": "इंडिया गेट",
+    "coords": [77.22930556, 28.61286389],
+    "year": 1931,
+    "period": "Colonial Delhi",
+    "type": "War memorial",
+    "dateLabel": "Dedicated 1931",
+    "story": "A sandstone memorial arch designed by Edwin Lutyens commemorates Indian soldiers who died in the First World War and the Third Anglo-Afghan War. Its foundation stone was laid in 1921; the completed memorial was dedicated in 1931.",
+    "reading": "Read the arch as a terminating landmark in the Central Vista landscape. Compare the ceremonial axis, traffic edges and large open lawns with the intimate street spaces of Old Delhi.",
+    "datePrecision": "documented",
+    "lenses": ["civic"],
+    "sources": [
+      {
+        "title": "Ministry of Tourism · India Gate",
+        "url": "https://www.incredibleindia.gov.in/en/delhi/delhi/india-gate",
+        "checked": "2026-10-16"
+      }
+    ],
+    "facts": [
+      {
+        "label": "Architect",
+        "value": "Sir Edwin Lutyens",
+        "source": 0
+      },
+      {
+        "label": "Documented height",
+        "value": "42 m (monument, not nearby buildings)",
+        "source": 0
+      },
+      {
+        "label": "Material",
+        "value": "Sandstone",
+        "source": 0
+      },
+      {
+        "label": "Construction milestones",
+        "value": "Foundation 1921; dedication 1931",
+        "source": 0
+      }
+    ],
+    "source": "https://www.incredibleindia.gov.in/en/delhi/delhi/india-gate",
+    "sourceName": "Ministry of Tourism · India Gate",
+    "photo": {
+      "path": "images/india-gate.jpg",
+      "author": "AKS.9955",
+      "licence": "CC BY-SA 4.0",
+      "licenceUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+      "page": "https://commons.wikimedia.org/wiki/File:India_Gate_front.jpg"
+    },
+    "wikidata": "Q245347"
+  },
+  {
+    "id": "humayun",
+    "name": "Humayun’s Tomb",
+    "hindi": "हुमायूँ का मक़बरा",
+    "coords": [77.25069444, 28.59327778],
+    "year": 1570,
+    "period": "Mughal Delhi",
+    "type": "Garden tomb",
+    "dateLabel": "Built circa 1570",
+    "story": "A monumental garden tomb places a red-sandstone and marble mausoleum at the centre of a divided garden. Its Persian-influenced planning, arcaded plinth and double dome became important precedents for later Mughal funerary architecture.",
+    "reading": "Compare the charbagh water axes, raised terrace and gateways. The garden and enclosing walls are part of the architectural composition; a building footprint alone cannot describe this landscape.",
+    "datePrecision": "approximate",
+    "lenses": ["mughal", "water"],
+    "sources": [
+      {
+        "title": "Ministry of Tourism · Humayun’s Tomb",
+        "url": "https://www.incredibleindia.gov.in/en/delhi/delhi/humayuns-tomb",
+        "checked": "2026-10-16"
+      },
+      {
+        "title": "UNESCO · Humayun’s Tomb",
+        "url": "https://whc.unesco.org/en/list/232/",
+        "checked": "Further reading; portal unavailable during this refresh"
+      },
+      {
+        "title": "ASI · Humayun’s Tomb",
+        "url": "https://asi.nic.in/pages/WorldHeritageHumayunTomb",
+        "checked": "2026-10-16"
+      },
+      {
+        "title": "Wikipedia · Humayun's Tomb",
+        "url": "https://en.wikipedia.org/wiki/Humayun%27s_Tomb",
+        "checked": "2026-10-16"
+      }
+    ],
+    "facts": [
+      {
+        "label": "Architect",
+        "value": "Mirak Mirza Ghiyath (ASI attribution)",
+        "source": 2
+      },
+      {
+        "label": "Composition",
+        "value": "Garden axes, raised plinth, double dome and corner kiosks",
+        "source": 0
+      },
+      {
+        "label": "Materials",
+        "value": "Red sandstone and white marble",
+        "source": 0
+      },
+      {
+        "label": "World Heritage",
+        "value": "UNESCO inscription, 1993",
+        "source": 3
+      }
+    ],
+    "source": "https://www.incredibleindia.gov.in/en/delhi/delhi/humayuns-tomb",
+    "sourceName": "Ministry of Tourism · Humayun’s Tomb",
+    "wikidata": "Q189648",
+    "photo": {
+      "path": "images/humayun.jpg",
+      "author": "Sourabh.biswas003",
+      "licence": "CC BY-SA 4.0",
+      "licenceUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+      "page": "https://commons.wikimedia.org/wiki/File:PXL_20231129_052234620_Humayun%E2%80%99s_Tomb_New_Delhi,_Delhi_110013_03.jpg"
+    }
+  },
+  {
+    "id": "qutub",
+    "name": "Qutb Minar",
+    "hindi": "क़ुतुब मीनार",
+    "coords": [77.185248, 28.524355],
+    "year": 1199,
+    "period": "Delhi Sultanate",
+    "type": "Minaret & archaeological complex",
+    "dateLabel": "Construction began 1199",
+    "story": "The minaret developed through successive building campaigns, beginning under Qutb-ud-din Aibak and continuing under Iltutmish, with later repairs. Fluted shafts, inscriptions and projecting balconies make its construction history legible in the elevation.",
+    "reading": "Study the tower together with the Quwwat-ul-Islam Mosque, Alai Darwaza and the Iron Pillar. The timeline marks the start of construction, not completion of every element of the complex.",
+    "datePrecision": "milestone",
+    "lenses": ["sacred"],
+    "sources": [
+      {
+        "title": "Ministry of Tourism · Qutb Minar",
+        "url": "https://www.incredibleindia.gov.in/en/delhi/delhi/qutub-minar",
+        "checked": "2026-10-16"
+      },
+      {
+        "title": "ASI · Qutb Minar",
+        "url": "https://asi.nic.in/pages/WorldHeritageQutbMinar",
+        "checked": "2026-10-16"
+      }
+    ],
+    "facts": [
+      {
+        "label": "Documented height",
+        "value": "72.5 m (the minaret)",
+        "source": 0
+      },
+      {
+        "label": "Patronage",
+        "value": "Aibak; additions by Iltutmish; subsequent repairs",
+        "source": 0
+      },
+      {
+        "label": "Materials",
+        "value": "Red and buff sandstone; marble in later portions",
+        "source": 0
+      },
+      {
+        "label": "Architectural detail",
+        "value": "Fluting, inscriptions and projecting balconies",
+        "source": 0
+      }
+    ],
+    "source": "https://www.incredibleindia.gov.in/en/delhi/delhi/qutub-minar",
+    "sourceName": "Ministry of Tourism · Qutb Minar",
+    "photo": {
+      "path": "images/qutub.jpg",
+      "author": "Wasir kasab",
+      "licence": "CC BY 4.0",
+      "licenceUrl": "https://creativecommons.org/licenses/by/4.0",
+      "page": "https://commons.wikimedia.org/wiki/File:Qutb_Minar_2022.jpg"
+    },
+    "wikidata": "Q187635"
+  },
+  {
+    "id": "lotus",
+    "name": "Lotus Temple",
+    "hindi": "कमल मंदिर",
+    "coords": [77.258456, 28.553328],
+    "year": 1986,
+    "period": "Contemporary Delhi",
+    "type": "Bahá’í House of Worship",
+    "dateLabel": "Opened December 1986",
+    "story": "Fariborz Sahba’s House of Worship translates a lotus into a nine-sided architectural composition. Twenty-seven marble-clad petals form the outer image, while nine entrances connect the surrounding landscape to the central worship hall.",
+    "reading": "Read the relationships between the petal groups, approach paths and nine reflecting pools. The footprint extrusion is schematic: it does not reproduce the curved shell structure.",
+    "datePrecision": "documented",
+    "lenses": ["sacred"],
+    "sources": [
+      {
+        "title": "Ministry of Tourism · Lotus Temple",
+        "url": "https://www.incredibleindia.gov.in/en/delhi/delhi/lotus-temple",
+        "checked": "2026-10-16"
+      }
+    ],
+    "facts": [
+      {
+        "label": "Architect",
+        "value": "Fariborz Sahba",
+        "source": 0
+      },
+      {
+        "label": "Form",
+        "value": "27 petals grouped into nine sets",
+        "source": 0
+      },
+      {
+        "label": "Material",
+        "value": "White marble cladding",
+        "source": 0
+      },
+      {
+        "label": "Landscape",
+        "value": "Nine surrounding reflecting pools",
+        "source": 0
+      }
+    ],
+    "source": "https://www.incredibleindia.gov.in/en/delhi/delhi/lotus-temple",
+    "sourceName": "Ministry of Tourism · Lotus Temple",
+    "photo": {
+      "path": "images/lotus.jpg",
+      "author": "Vandelizer",
+      "licence": "CC BY 2.0",
+      "licenceUrl": "https://creativecommons.org/licenses/by/2.0",
+      "page": "https://commons.wikimedia.org/wiki/File:LotusDelhi.jpg"
+    },
+    "wikidata": "Q940843"
+  },
+  {
+    "id": "akshardham",
+    "name": "Swaminarayan Akshardham",
+    "hindi": "स्वामीनारायण अक्षरधाम",
+    "coords": [77.27722222, 28.6125],
+    "year": 2005,
+    "period": "Contemporary Delhi",
+    "type": "Temple & cultural complex",
+    "dateLabel": "Opened 2005",
+    "story": "A contemporary temple campus on the east side of the Yamuna brings together a carved mandir, gardens and cultural exhibition spaces. Its visitor sequence extends far beyond the central shrine and makes landscape an essential part of the experience.",
+    "reading": "Compare the central shrine, large processional paths and campus-scale edges. Use the cited operator guidance for current access rules; mapped entrances and building tags are not a visitor-access guarantee.",
+    "datePrecision": "documented",
+    "lenses": ["sacred"],
+    "sources": [
+      {
+        "title": "Ministry of Tourism · Swaminarayan Akshardham",
+        "url": "https://www.incredibleindia.gov.in/en/delhi/delhi/akshardham-temple",
+        "checked": "2026-10-16"
+      }
+    ],
+    "facts": [
+      {
+        "label": "Architectural character",
+        "value": "Carved stone mandir within a landscaped campus",
+        "source": 0
+      },
+      {
+        "label": "Urban setting",
+        "value": "East bank of the Yamuna",
+        "source": 0
+      },
+      {
+        "label": "Public programme",
+        "value": "Worship, gardens and cultural exhibitions",
+        "source": 0
+      }
+    ],
+    "source": "https://www.incredibleindia.gov.in/en/delhi/delhi/akshardham-temple",
+    "sourceName": "Ministry of Tourism · Swaminarayan Akshardham",
+    "photo": {
+      "path": "images/akshardham.jpg",
+      "author": "Swaminarayan Sanstha",
+      "licence": "CC BY-SA 3.0",
+      "licenceUrl": "https://creativecommons.org/licenses/by-sa/3.0",
+      "page": "https://commons.wikimedia.org/wiki/File:New_Delhi_Temple.jpg"
+    },
+    "wikidata": "Q1849858"
+  },
+  {
+    "id": "purana-qila",
+    "name": "Purana Qila",
+    "hindi": "पुराना क़िला",
+    "coords": [77.24416667, 28.60944444],
+    "year": 1541,
+    "period": "Early Mughal & Sur Delhi",
+    "type": "Fort complex",
+    "dateLabel": "Qila-i Kuhna Mosque built 1541",
+    "story": "The Old Fort is associated with the building campaigns of Humayun and Sher Shah Suri. Gateways, defensive walls, the Qila-i Kuhna Mosque and Sher Mandal preserve different strands of that history within one enclosure.",
+    "reading": "Study the enclosure, approach thresholds and the contrast between robust perimeter walls and freestanding internal structures. The date shown refers to the mosque, not the beginning of occupation of the site.",
+    "datePrecision": "milestone",
+    "lenses": ["mughal"],
+    "sources": [
+      {
+        "title": "Ministry of Tourism · Purana Qila",
+        "url": "https://www.incredibleindia.gov.in/en/delhi/delhi/purana-quila",
+        "checked": "2026-10-16"
+      }
+    ],
+    "facts": [
+      {
+        "label": "Key structure",
+        "value": "Qila-i Kuhna Mosque, 1541",
+        "source": 0
+      },
+      {
+        "label": "Other landmark",
+        "value": "Sher Mandal, an octagonal tower",
+        "source": 0
+      },
+      {
+        "label": "Spatial character",
+        "value": "Fortified enclosure with monumental gateways",
+        "source": 0
+      }
+    ],
+    "source": "https://www.incredibleindia.gov.in/en/delhi/delhi/purana-quila",
+    "sourceName": "Ministry of Tourism · Purana Qila",
+    "photo": {
+      "path": "images/purana-qila.jpg",
+      "author": "Airknight at English Wikipedia",
+      "licence": "CC BY 3.0",
+      "licenceUrl": "https://creativecommons.org/licenses/by/3.0",
+      "page": "https://commons.wikimedia.org/wiki/File:Purana_Qila_01.jpg"
+    },
+    "wikidata": "Q1151529"
+  },
+  {
+    "id": "agrasen",
+    "name": "Agrasen ki Baoli",
+    "hindi": "अग्रसेन की बावली",
+    "coords": [77.225, 28.62611111],
+    "year": 1400,
+    "period": "Medieval Delhi",
+    "type": "Stepwell",
+    "dateLabel": "14th–15th century; date uncertain",
+    "story": "A long flight of steps descends between arcaded walls to a historic water structure on Hailey Road. Its origins and later rebuilding are uncertain; the Ministry of Tourism describes a likely medieval phase and distinguishes this from local legends.",
+    "reading": "Read the site in section: descent, shade, water access and retaining walls are more informative here than a conventional above-ground extrusion. The timeline position is approximate.",
+    "datePrecision": "approximate",
+    "lenses": ["water"],
+    "sources": [
+      {
+        "title": "Ministry of Tourism · Agrasen ki Baoli",
+        "url": "https://www.incredibleindia.gov.in/en/delhi/delhi/agrasen-ki-baoli",
+        "checked": "2026-10-16"
+      }
+    ],
+    "facts": [
+      {
+        "label": "Documented dimensions",
+        "value": "About 60 m long and 15 m wide",
+        "source": 0
+      },
+      {
+        "label": "Steps",
+        "value": "108, according to the tourism account",
+        "source": 0
+      },
+      {
+        "label": "Protection",
+        "value": "Archaeological Survey of India",
+        "source": 0
+      },
+      {
+        "label": "Chronology",
+        "value": "Origin uncertain; medieval repair/rebuilding discussed",
+        "source": 0
+      }
+    ],
+    "source": "https://www.incredibleindia.gov.in/en/delhi/delhi/agrasen-ki-baoli",
+    "sourceName": "Ministry of Tourism · Agrasen ki Baoli",
+    "photo": {
+      "path": "images/agrasen.jpg",
+      "author": "Slyronit",
+      "licence": "CC BY-SA 4.0",
+      "licenceUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+      "page": "https://commons.wikimedia.org/wiki/File:Agrasen_ki_Baoli,_New_Delhi.jpg"
+    },
+    "wikidata": "Q4693773"
+  },
+  {
+    "id": "bangla-sahib",
+    "name": "Gurudwara Bangla Sahib",
+    "hindi": "गुरुद्वारा बंगला साहिब",
+    "coords": [77.2089, 28.6267],
+    "year": 1664,
+    "period": "Sacred Delhi",
+    "type": "Gurdwara & sarovar",
+    "dateLabel": "Guru Har Krishan’s Delhi visit, 1664",
+    "story": "The gurdwara is associated with Guru Har Krishan’s stay in Delhi and service to people during illness. The present complex combines prayer, the sarovar and community facilities; the historical milestone does not date all its present buildings.",
+    "reading": "Observe the relation between the prayer hall, water tank, shaded circulation and langar. These shared spaces help explain how an institution functions as part of the city.",
+    "datePrecision": "milestone",
+    "lenses": ["sacred", "water"],
+    "sources": [
+      {
+        "title": "Ministry of Tourism · Gurudwara Bangla Sahib",
+        "url": "https://www.incredibleindia.gov.in/en/delhi/delhi/gurudwara-bangla-sahib",
+        "checked": "2026-10-16"
+      },
+      {
+        "title": "Delhi Tourism · Gurudwara Bangla Sahib",
+        "url": "https://delhitourism.gov.in/tourist_place/spritual_delhi.html",
+        "checked": "2026-10-16"
+      }
+    ],
+    "facts": [
+      {
+        "label": "Historical association",
+        "value": "Guru Har Krishan",
+        "source": 0
+      },
+      {
+        "label": "Principal spaces",
+        "value": "Prayer hall, sarovar and community kitchen",
+        "source": 0
+      },
+      {
+        "label": "Urban context",
+        "value": "Institutional precinct near Connaught Place",
+        "source": 0
+      }
+    ],
+    "source": "https://www.incredibleindia.gov.in/en/delhi/delhi/gurudwara-bangla-sahib",
+    "sourceName": "Ministry of Tourism · Gurudwara Bangla Sahib",
+    "photo": {
+      "path": "images/bangla-sahib.jpg",
+      "author": "Ken Wieland from Philadelphia, USA",
+      "licence": "CC BY-SA 2.0",
+      "licenceUrl": "https://creativecommons.org/licenses/by-sa/2.0",
+      "page": "https://commons.wikimedia.org/wiki/File:Front_view_of_Gurudwara_Bangla_Sahib,_Delhi.jpg"
+    },
+    "wikidata": "Q2375435"
+  },
+  {
+    "id": "lodhi",
+    "name": "Lodhi Garden",
+    "hindi": "लोधी गार्डन",
+    "coords": [77.22, 28.593],
+    "year": 1444,
+    "period": "Sayyid & Lodi Delhi",
+    "type": "Tombs & public garden",
+    "dateLabel": "Muhammad Shah’s tomb, 1444",
+    "story": "Tombs from the Sayyid and Lodi periods sit within a later public landscape. The garden’s modern history includes its 1936 layout and a 1968 redesign associated with Garrett Eckbo and Joseph Allen Stein.",
+    "reading": "Compare domed tombs, gateways, planting and walking routes. The time marker refers to Muhammad Shah’s tomb; the contemporary park is the result of many later interventions.",
+    "datePrecision": "milestone",
+    "lenses": ["water"],
+    "sources": [
+      {
+        "title": "Ministry of Tourism · Lodhi Garden",
+        "url": "https://www.incredibleindia.gov.in/en/delhi/delhi/lodhi-garden",
+        "checked": "2026-10-16"
+      }
+    ],
+    "facts": [
+      {
+        "label": "Early monument",
+        "value": "Muhammad Shah’s tomb, 1444",
+        "source": 0
+      },
+      {
+        "label": "Park phase",
+        "value": "Landscaped in 1936 as Lady Willingdon Park",
+        "source": 0
+      },
+      {
+        "label": "Later design",
+        "value": "1968 changes by Garrett Eckbo and Joseph Allen Stein",
+        "source": 0
+      },
+      {
+        "label": "Study focus",
+        "value": "Heritage structures within everyday public open space",
+        "source": 0
+      }
+    ],
+    "source": "https://www.incredibleindia.gov.in/en/delhi/delhi/lodhi-garden",
+    "sourceName": "Ministry of Tourism · Lodhi Garden",
+    "photo": {
+      "path": "images/lodhi.jpg",
+      "author": "Amaninder",
+      "licence": "CC BY-SA 3.0",
+      "licenceUrl": "https://creativecommons.org/licenses/by-sa/3.0",
+      "page": "https://commons.wikimedia.org/wiki/File:Lodhi_Gardens_on_a_sunny_day.jpg"
+    },
+    "wikidata": "Q2985076"
+  },
+  {
+    "id": "raj-ghat",
+    "name": "Raj Ghat",
+    "hindi": "राज घाट",
+    "coords": [77.24933333, 28.6405],
+    "year": 1948,
+    "period": "Independent India",
+    "type": "Memorial landscape",
+    "dateLabel": "Gandhi cremation site, 1948",
+    "story": "Raj Ghat marks the site of Mahatma Gandhi’s cremation on 31 January 1948. A restrained black-marble platform and a garden setting make a place of collective remembrance through deliberate simplicity.",
+    "reading": "Look at procession, changes in level and the transition from the city into a contemplative landscape. The 1948 marker records the historical event rather than the completion of every landscape element.",
+    "datePrecision": "milestone",
+    "lenses": ["civic"],
+    "sources": [
+      {
+        "title": "Ministry of Tourism · Raj Ghat",
+        "url": "https://www.incredibleindia.gov.in/en/delhi/delhi/raj-ghat",
+        "checked": "2026-10-16"
+      }
+    ],
+    "facts": [
+      {
+        "label": "Historical event",
+        "value": "Cremation on 31 January 1948",
+        "source": 0
+      },
+      {
+        "label": "Material",
+        "value": "Black-marble memorial platform",
+        "source": 0
+      },
+      {
+        "label": "Spatial reading",
+        "value": "Garden setting and ceremonial approach",
+        "source": 0
+      }
+    ],
+    "source": "https://www.incredibleindia.gov.in/en/delhi/delhi/raj-ghat",
+    "sourceName": "Ministry of Tourism · Raj Ghat",
+    "photo": {
+      "path": "images/raj-ghat.jpg",
+      "author": "Humayunn Niaz Ahmed Peerzaada from Mumbai, India",
+      "licence": "CC BY-SA 2.0",
+      "licenceUrl": "https://creativecommons.org/licenses/by-sa/2.0",
+      "page": "https://commons.wikimedia.org/wiki/File:Gandhi_Memorial.jpg"
+    },
+    "wikidata": "Q1210083"
+  },
+  {
+    "id": "national-museum",
+    "name": "National Museum",
+    "hindi": "राष्ट्रीय संग्रहालय",
+    "coords": [77.219262, 28.611811],
+    "year": 1949,
+    "period": "Independent India",
+    "type": "Museum",
+    "dateLabel": "Museum established 1949",
+    "story": "The National Museum on Janpath presents collections spanning archaeology, sculpture, painting and decorative arts. Established in 1949, the institution operates under the Ministry of Culture. The timeline dates the institution rather than all of its present buildings.",
+    "reading": "Study the institutional frontage, approach and relationship to the government precinct. Use the museum website for current galleries and visiting arrangements, which can change independently of mapped geometry.",
+    "datePrecision": "milestone",
+    "lenses": ["civic"],
+    "sources": [
+      {
+        "title": "Ministry of Tourism · National Museum",
+        "url": "https://www.incredibleindia.gov.in/en/delhi/delhi/national-museum",
+        "checked": "2026-10-16"
+      },
+      {
+        "title": "Wikipedia · National Museum, New Delhi",
+        "url": "https://en.wikipedia.org/wiki/National_Museum,_New_Delhi",
+        "checked": "2026-10-16"
+      }
+    ],
+    "facts": [
+      {
+        "label": "Location",
+        "value": "Janpath, New Delhi",
+        "source": 0
+      },
+      {
+        "label": "Institution established",
+        "value": "1949",
+        "source": 1
+      },
+      {
+        "label": "Collections",
+        "value": "Archaeology, sculpture, paintings and decorative arts",
+        "source": 0
+      }
+    ],
+    "source": "https://www.incredibleindia.gov.in/en/delhi/delhi/national-museum",
+    "sourceName": "Ministry of Tourism · National Museum",
+    "photo": {
+      "path": "images/national-museum.jpg",
+      "author": "Miya.m",
+      "licence": "CC BY-SA 3.0",
+      "licenceUrl": "https://creativecommons.org/licenses/by-sa/3.0",
+      "page": "https://commons.wikimedia.org/wiki/File:India_national_museum_01.jpg"
+    },
+    "wikidata": "Q1356138"
+  },
+  {
+    "id": "ngma",
+    "name": "National Gallery of Modern Art",
+    "hindi": "राष्ट्रीय आधुनिक कला संग्रहालय",
+    "coords": [77.234401, 28.610182],
+    "year": 1954,
+    "period": "Independent India",
+    "type": "Art museum at Jaipur House",
+    "dateLabel": "Gallery established 1954",
+    "story": "The National Gallery of Modern Art occupies Jaipur House near India Gate and later exhibition buildings. The gallery traces Indian art from the mid-eighteenth century onward; the institution opened in 1954 and expanded with a new wing in 2009.",
+    "reading": "Compare the historic domed house with the later gallery spaces and their courtyards. The 1954 marker dates the gallery’s establishment, not the original house.",
+    "datePrecision": "milestone",
+    "lenses": ["civic"],
+    "sources": [
+      {
+        "title": "Ministry of Tourism · National Gallery of Modern Art",
+        "url": "https://www.incredibleindia.gov.in/en/delhi/delhi/national-gallery-of-modern-art",
+        "checked": "2026-10-16"
+      }
+    ],
+    "facts": [
+      {
+        "label": "Historic premises",
+        "value": "Jaipur House",
+        "source": 0
+      },
+      {
+        "label": "Institution established",
+        "value": "1954",
+        "source": 0
+      },
+      {
+        "label": "Expansion",
+        "value": "New wing opened in 2009",
+        "source": 0
+      }
+    ],
+    "source": "https://www.incredibleindia.gov.in/en/delhi/delhi/national-gallery-of-modern-art",
+    "sourceName": "Ministry of Tourism · National Gallery of Modern Art",
+    "photo": {
+      "path": "images/ngma.jpg",
+      "author": "Pardeep",
+      "licence": "CC BY-SA 3.0",
+      "licenceUrl": "https://creativecommons.org/licenses/by-sa/3.0",
+      "page": "https://commons.wikimedia.org/wiki/File:Jaipur_House_Delhi.jpg"
+    },
+    "wikidata": "Q1338832"
+  },
+  {
+    "id": "war-memorial",
+    "name": "National War Memorial",
+    "hindi": "राष्ट्रीय समर स्मारक",
+    "coords": [77.233053, 28.612772],
+    "year": 2019,
+    "period": "Contemporary Delhi",
+    "type": "Memorial landscape",
+    "dateLabel": "Dedicated 2019",
+    "story": "Beside India Gate, a landscape of concentric spaces honours armed-forces personnel who died in service after Independence. The design moves through circles of immortality, bravery, sacrifice and protection, using an obelisk, murals, inscribed walls and trees.",
+    "reading": "Read the low landscape as a sequence of thresholds rather than a single object. Its relationship to the older India Gate makes the different commemorative histories visible.",
+    "datePrecision": "documented",
+    "lenses": ["civic"],
+    "sources": [
+      {
+        "title": "Ministry of Tourism · National War Memorial",
+        "url": "https://www.incredibleindia.gov.in/en/delhi/delhi/national-war-memorial",
+        "checked": "2026-10-16"
+      },
+      {
+        "title": "Wikipedia · National War Memorial (India)",
+        "url": "https://en.wikipedia.org/wiki/National_War_Memorial_%28India%29",
+        "checked": "2026-10-16"
+      }
+    ],
+    "facts": [
+      {
+        "label": "Composition",
+        "value": "Amar, Veerta, Tyag and Raksha Chakras",
+        "source": 0
+      },
+      {
+        "label": "Materials & elements",
+        "value": "Obelisk, bronze murals, inscribed granite walls and trees",
+        "source": 0
+      },
+      {
+        "label": "Landscape role",
+        "value": "A memorial precinct alongside India Gate",
+        "source": 0
+      }
+    ],
+    "source": "https://www.incredibleindia.gov.in/en/delhi/delhi/national-war-memorial",
+    "sourceName": "Ministry of Tourism · National War Memorial",
+    "wikidata": "Q17747063",
+    "photo": {
+      "path": "images/war-memorial.jpg",
+      "author": "KCVelaga",
+      "licence": "CC BY-SA 4.0",
+      "licenceUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+      "page": "https://commons.wikimedia.org/wiki/File:National_War_Memorial_(India)_illuminated.jpg"
+    }
+  },
+  {
+    "id": "safdarjung",
+    "name": "Safdarjung’s Tomb",
+    "hindi": "सफ़दरजंग का मक़बरा",
+    "coords": [77.2106, 28.5893],
+    "year": 1754,
+    "period": "Late Mughal Delhi",
+    "type": "Garden tomb",
+    "dateLabel": "Built 1754",
+    "story": "Safdarjung’s Tomb is a late expression of the Mughal garden-tomb tradition. A prominent domed mausoleum, an elevated platform and an enclosed garden create an axial composition in the city south of the Central Vista.",
+    "reading": "Compare its garden divisions and scale with Humayun’s Tomb. Inspect the hierarchy of the central tomb, gateway and subsidiary pavilions rather than treating the entire compound as one building.",
+    "datePrecision": "documented",
+    "lenses": ["mughal", "water"],
+    "sources": [
+      {
+        "title": "Delhi Tourism · Safdarjung’s Tomb",
+        "url": "https://delhitourism.gov.in/tourist_place/safdarjang_tomb.html",
+        "checked": "2026-10-16"
+      }
+    ],
+    "facts": [
+      {
+        "label": "Date",
+        "value": "1754",
+        "source": 0
+      },
+      {
+        "label": "Architectural tradition",
+        "value": "Late Mughal garden tomb",
+        "source": 0
+      },
+      {
+        "label": "Spatial elements",
+        "value": "Central mausoleum, garden, gateway and pavilions",
+        "source": 0
+      }
+    ],
+    "source": "https://delhitourism.gov.in/tourist_place/safdarjang_tomb.html",
+    "sourceName": "Delhi Tourism · Safdarjung’s Tomb",
+    "photo": {
+      "path": "images/safdarjung.jpg",
+      "author": "Chitranshi",
+      "licence": "CC BY-SA 3.0",
+      "licenceUrl": "https://creativecommons.org/licenses/by-sa/3.0",
+      "page": "https://commons.wikimedia.org/wiki/File:Safdar_Jang%E2%80%99s_Tomb,_Delhi_.jpg"
+    },
+    "wikidata": "Q375624"
+  },
+  {
+    "id": "rashtrapati",
+    "name": "Rashtrapati Bhavan",
+    "hindi": "राष्ट्रपति भवन",
+    "coords": [77.19972222, 28.61444444],
+    "year": 1929,
+    "period": "Colonial Delhi",
+    "type": "Presidential residence",
+    "dateLabel": "Building completed 1929",
+    "story": "Originally conceived as the Viceroy’s House, Rashtrapati Bhavan is now the residence of the President of India. Its domed mass, forecourt and gardens establish the western end of the Central Vista composition.",
+    "reading": "Explore the relation of Raisina Hill, the ceremonial axis and the large estate. This is a building-history profile: public access is limited to authorised visitor circuits and bookings.",
+    "datePrecision": "documented",
+    "lenses": ["civic"],
+    "sources": [
+      {
+        "title": "Delhi Tourism · Rashtrapati Bhavan",
+        "url": "https://delhitourism.gov.in/aboutus/rashtrapathi_bhavan.html",
+        "checked": "2026-10-16"
+      }
+    ],
+    "facts": [
+      {
+        "label": "Architect",
+        "value": "Sir Edwin Lutyens",
+        "source": 0
+      },
+      {
+        "label": "Original function",
+        "value": "Viceroy’s House",
+        "source": 0
+      },
+      {
+        "label": "Present role",
+        "value": "Residence of the President of India",
+        "source": 0
+      },
+      {
+        "label": "Design elements",
+        "value": "Central dome, forecourt, colonnades and gardens",
+        "source": 0
+      }
+    ],
+    "source": "https://delhitourism.gov.in/aboutus/rashtrapathi_bhavan.html",
+    "sourceName": "Delhi Tourism · Rashtrapati Bhavan",
+    "photo": {
+      "path": "images/rashtrapati.jpg",
+      "author": "Tamjeed Ahmed",
+      "licence": "CC BY-SA 4.0",
+      "licenceUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+      "page": "https://commons.wikimedia.org/wiki/File:Rashrapati_Bhavan_in_September_2024.jpg"
+    },
+    "wikidata": "Q677555"
+  },
+  {
+    "id": "old-parliament",
+    "name": "Samvidhan Sadan (Old Parliament House)",
+    "hindi": "संविधान सदन",
+    "coords": [77.2081, 28.6172],
+    "year": 1927,
+    "period": "Colonial Delhi",
+    "type": "Former Parliament building",
+    "dateLabel": "Inaugurated 1927",
+    "story": "The circular former Parliament House is a major component of New Delhi’s governmental ensemble. Designed by Edwin Lutyens and Herbert Baker, it opened in 1927; its colonnaded perimeter distinguishes it from the axial government buildings nearby.",
+    "reading": "Compare the circular plan, radial internal organisation and the open spaces around it. The linked Delhi Tourism account describes the historic Parliament House, not the newer Parliament building.",
+    "datePrecision": "documented",
+    "lenses": ["civic"],
+    "sources": [
+      {
+        "title": "Delhi Tourism · Historic Parliament House (legacy description)",
+        "url": "https://delhitourism.gov.in/tourist_place/parliment_house.html",
+        "checked": "2026-10-16"
+      },
+      {
+        "title": "Wikipedia · Old Parliament House, New Delhi",
+        "url": "https://en.wikipedia.org/wiki/Old_Parliament_House%2C_New_Delhi",
+        "checked": "2026-10-16"
+      }
+    ],
+    "facts": [
+      {
+        "label": "Architects",
+        "value": "Edwin Lutyens and Herbert Baker",
+        "source": 1
+      },
+      {
+        "label": "Opened",
+        "value": "1927",
+        "source": 1
+      },
+      {
+        "label": "Plan",
+        "value": "Circular composition with a continuous colonnade",
+        "source": 0
+      }
+    ],
+    "source": "https://delhitourism.gov.in/tourist_place/parliment_house.html",
+    "sourceName": "Delhi Tourism · Samvidhan Sadan (Old Parliament House)",
+    "wikidata": "Q15275136",
+    "photo": {
+      "path": "images/old-parliament.jpg",
+      "author": "Bill Strong from Melbourne, Australia",
+      "licence": "CC BY-SA 2.0",
+      "licenceUrl": "https://creativecommons.org/licenses/by-sa/2.0",
+      "page": "https://commons.wikimedia.org/wiki/File:SansadBhavan.jpg"
+    }
+  },
+  {
+    "id": "hauz-khas",
+    "name": "Hauz Khas Complex",
+    "hindi": "हौज़ ख़ास परिसर",
+    "coords": [77.19194444, 28.555],
+    "year": 1350,
+    "period": "Delhi Sultanate",
+    "type": "Reservoir, madrasa & tomb",
+    "dateLabel": "Mid-14th-century phase; approximate",
+    "story": "The Hauz Khas complex places a madrasa and funerary architecture beside a historic reservoir. Water infrastructure, learning and commemoration meet in a setting that now borders an intensely used urban neighbourhood.",
+    "reading": "Explore the reservoir edge, terraced buildings and transitions to the village streets. The fourteenth-century marker is approximate and applies to the madrasa phase rather than the original reservoir.",
+    "datePrecision": "approximate",
+    "lenses": ["water"],
+    "sources": [
+      {
+        "title": "Delhi Tourism · Hauz Khas Complex",
+        "url": "https://delhitourism.gov.in/dt/explore_the_city/hauz_khas_fort.html",
+        "checked": "2026-10-16"
+      },
+      {
+        "title": "Wikipedia · Hauz Khas Complex",
+        "url": "https://en.wikipedia.org/wiki/Hauz_Khas_Complex",
+        "checked": "2026-10-16"
+      }
+    ],
+    "facts": [
+      {
+        "label": "Principal elements",
+        "value": "Reservoir, madrasa and Firoz Shah’s tomb",
+        "source": 0
+      },
+      {
+        "label": "Historical association",
+        "value": "Firoz Shah Tughlaq",
+        "source": 1
+      },
+      {
+        "label": "Study focus",
+        "value": "Water edge and the interface between heritage and neighbourhood",
+        "source": 0
+      }
+    ],
+    "source": "https://delhitourism.gov.in/dt/explore_the_city/hauz_khas_fort.html",
+    "sourceName": "Delhi Tourism · Hauz Khas Complex",
+    "photo": {
+      "path": "images/hauz-khas.jpg",
+      "author": "Nvvchar (talk)",
+      "licence": "CC BY-SA 3.0",
+      "licenceUrl": "https://creativecommons.org/licenses/by-sa/3.0",
+      "page": "https://commons.wikimedia.org/wiki/File:Feroze_Shah%27s_Tomb.JPG"
+    },
+    "wikidata": "Q4496635"
+  }
+]
