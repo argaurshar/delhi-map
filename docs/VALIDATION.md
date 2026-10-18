@@ -1,3 +1,13 @@
+# Sky-drop release validation — 18 October 2026
+
+- 26 unit tests pass. New checks evaluate MapLibre expressions to verify rigid building/part translation, stagger timing, smooth reversal and fixed paint expressions during motion.
+- TypeScript and the GitHub Pages production build pass.
+- The layer-motion browser suite passes on desktop and mobile: all five switches, visible drop/lift states, rapid reversals, independent heritage-marker staggering, replay, tour interruption, 2D/3D and runtime reduced motion.
+- The existing animation suite passes: chronology geometry, histogram/counts, hover, context and shared-view restoration, marker filtering and mobile controls.
+- Visual checks include airborne and landed building masses at Jama Masjid. The data snapshot, height attributes, sources and research calculations are unchanged.
+
+The following baseline checks were recorded for the preceding data and animation release.
+
 # Release validation — 16 October 2026
 
 Validated with Node 24.19.0, Python 3.12, Shapely 2.1.2, PyOsmium 4.3.1 and headless Chromium with software WebGL.

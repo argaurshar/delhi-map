@@ -876,6 +876,7 @@ export default function App() {
             data={data}
             lens={lens}
             timelineMode={timelineMode}
+            chronologyPlaying={playing}
             context={context}
             period={period}
             showUnknown={showUnknown}
@@ -1007,7 +1008,12 @@ export default function App() {
                 className={`layer-row ${layers[key] ? "enabled" : ""}`}
                 role="switch"
                 aria-checked={layers[key]}
-                onClick={() => setLayers((l) => ({ ...l, [key]: !l[key] }))}
+                onClick={() => {
+                  setMotionInterrupt((i) => i + 1);
+                  setPlaying(false);
+                  map.current?.stopMotion();
+                  setLayers((l) => ({ ...l, [key]: !l[key] }));
+                }}
               >
                 <span className={`layer-icon ${key}`}>
                   <Icon size={18} />

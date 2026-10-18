@@ -33,6 +33,12 @@ import {
 } from "../lib/chronology";
 import { buildingYear } from "../lib/buildings";
 import { HERITAGE, PILOT } from "../lib/data";
+import {
+  LayerMotion,
+  MarkerDrop,
+  dropPhase,
+  COHORTS,
+} from "../lib/layerMotion";
 
 export interface MapHandle {
   overview: () => void;
@@ -50,6 +56,7 @@ interface Props {
   data: CityData;
   lens: HeritageLens;
   timelineMode: TimelineMode;
+  chronologyPlaying: boolean;
   context: ContextId;
   period: PeriodId | null;
   showUnknown: boolean;
@@ -160,9 +167,11 @@ export const MapView = forwardRef<MapHandle, Props>(
     const dated = useRef<{ id: string; year: number }[]>([]);
     const shownDates = useRef(new Set<string>());
     const temporalKey = useRef("");
+    const skyTemporalKey = useRef("");
     const updateLabels = useRef<() => void>(() => {});
-    const orbitFrame = useRef(0),
-      revealFrame = useRef(0);
+    const orbitFrame = useRef(0);
+    const layerMotion = useRef<LayerMotion | null>(null);
+    const markerMotion = useRef<MarkerDrop | null>(null);
     const reduced = () =>
       window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     const stopMotion = () => {
@@ -170,33 +179,7 @@ export const MapView = forwardRef<MapHandle, Props>(
       orbitFrame.current = 0;
       mapRef.current?.stop();
     };
-    const reveal = () => {
-      const m = mapRef.current;
-      if (!m?.getLayer("buildings")) return;
-      cancelAnimationFrame(revealFrame.current);
-      if (reduced()) return;
-      const start = performance.now();
-      const tick = (time: number) => {
-        const progress = Math.min(1, (time - start) / 1800);
-        const eased = 1 - Math.pow(1 - progress, 3);
-        for (const id of ["buildings", "building-parts"]) {
-          m.setPaintProperty(id, "fill-extrusion-height", [
-            "*",
-            ["coalesce", ["get", "height_m"], 8],
-            ["coalesce", ["feature-state", "appearance"], 1],
-            eased,
-          ]);
-          if (id === "building-parts")
-            m.setPaintProperty(id, "fill-extrusion-base", [
-              "*",
-              ["coalesce", ["get", "min_height_m"], 0],
-              eased,
-            ]);
-        }
-        if (progress < 1) revealFrame.current = requestAnimationFrame(tick);
-      };
-      revealFrame.current = requestAnimationFrame(tick);
-    };
+    const reveal = () => layerMotion.current?.replay();
     const markers = useRef<{ id: string; marker: maplibregl.Marker }[]>([]);
     useImperativeHandle(ref, () => ({
       overview() {
@@ -326,10 +309,14 @@ export const MapView = forwardRef<MapHandle, Props>(
       });
       m.on("idle", () => {
         if (container.current) {
-          container.current.dataset.settled = "true";
-          const rendered = m.getLayer("buildings")
-            ? m.queryRenderedFeatures({ layers: ["buildings"] })
-            : [];
+          container.current.dataset.settled =
+            container.current.dataset.layerMoving === "true" ? "false" : "true";
+          const rendered =
+            m.getLayer("buildings") &&
+            latest.current.layers.buildings &&
+            container.current.dataset.layerMoving !== "true"
+              ? m.queryRenderedFeatures({ layers: ["buildings"] })
+              : [];
           container.current.dataset.visibleBuildings = String(rendered.length);
           container.current.dataset.visibleDatedIds = JSON.stringify([
             ...new Set(
@@ -373,6 +360,9 @@ export const MapView = forwardRef<MapHandle, Props>(
               road_type: f.properties.road_type,
               rail_type: f.properties.rail_type,
               recorded_year: buildingYear(f),
+              motion_cohort: Math.round(
+                dropPhase(f.properties.id) * (COHORTS - 1),
+              ),
               ...Object.fromEntries(
                 CONTEXTS.filter((c) => c.id !== "none").map((c) => [
                   `context_${c.id}`,
@@ -699,10 +689,25 @@ export const MapView = forwardRef<MapHandle, Props>(
         updateLabels.current = () => labels(true);
         m.on("moveend", () => labels());
         labels();
+        layerMotion.current = new LayerMotion(
+          m,
+          latest.current.layers,
+          renderData,
+          () => reduced() || document.hidden,
+          (values, moving) => {
+            if (container.current) {
+              container.current.dataset.layerProgress = JSON.stringify(values);
+              container.current.dataset.layerMoving = String(moving);
+              if (moving) container.current.dataset.settled = "false";
+            }
+          },
+        );
+        markerMotion.current = new MarkerDrop(
+          () => reduced() || document.hidden,
+        );
         setReady(true);
         m.once("idle", () => {
           latest.current.onReady();
-          reveal();
         });
       });
       m.on("click", (e) => {
@@ -712,7 +717,17 @@ export const MapView = forwardRef<MapHandle, Props>(
         }
         if (!m.getLayer("buildings")) return;
         const features = m.queryRenderedFeatures(e.point, {
-          layers: ["buildings", "buildings-flat", "station", "places"],
+          layers: [
+            ...(latest.current.layers.buildings &&
+            container.current?.dataset.layerMoving !== "true"
+              ? ["buildings", "buildings-flat"]
+              : []),
+            ...(latest.current.layers.transit &&
+            container.current?.dataset.layerMoving !== "true"
+              ? ["station"]
+              : []),
+            "places",
+          ],
         });
         const id = features[0]?.properties?.id;
         const feature = latest.current.data.features.find(
@@ -727,7 +742,17 @@ export const MapView = forwardRef<MapHandle, Props>(
         }
         if (!m.getLayer("buildings")) return;
         const feature = m.queryRenderedFeatures(e.point, {
-          layers: ["buildings", "buildings-flat", "station", "places"],
+          layers: [
+            ...(latest.current.layers.buildings &&
+            container.current?.dataset.layerMoving !== "true"
+              ? ["buildings", "buildings-flat"]
+              : []),
+            ...(latest.current.layers.transit &&
+            container.current?.dataset.layerMoving !== "true"
+              ? ["station"]
+              : []),
+            "places",
+          ],
         })[0];
         const id = feature?.properties?.id ?? null;
         if (hoverId.current !== id) {
@@ -767,23 +792,13 @@ export const MapView = forwardRef<MapHandle, Props>(
         )
           return;
         stopMotion();
-        cancelAnimationFrame(revealFrame.current);
+        layerMotion.current?.finish();
+        markerMotion.current?.finish();
         cancelAnimationFrame(dateFrame.current);
         cancelAnimationFrame(colourFrame.current);
         dated.current.forEach((f) =>
           m.setFeatureState({ source: "city", id: f.id }, { appearance: 1 }),
         );
-        for (const id of ["buildings", "building-parts"])
-          m.setPaintProperty(id, "fill-extrusion-height", [
-            "*",
-            ["coalesce", ["get", "height_m"], 8],
-            ["coalesce", ["feature-state", "appearance"], 1],
-          ]);
-        m.setPaintProperty("building-parts", "fill-extrusion-base", [
-          "coalesce",
-          ["get", "min_height_m"],
-          0,
-        ]);
         const color: ExpressionSpecification = [
           "case",
           ["boolean", ["feature-state", "selected"], false],
@@ -794,6 +809,7 @@ export const MapView = forwardRef<MapHandle, Props>(
         ];
         m.setPaintProperty("buildings", "fill-extrusion-color", color);
         m.setPaintProperty("buildings-flat", "fill-color", color);
+        layerMotion.current?.syncColours();
       };
       preference.addEventListener("change", finishMotion);
       document.addEventListener("visibilitychange", finishMotion);
@@ -801,7 +817,10 @@ export const MapView = forwardRef<MapHandle, Props>(
         preference.removeEventListener("change", finishMotion);
         document.removeEventListener("visibilitychange", finishMotion);
         cancelAnimationFrame(orbitFrame.current);
-        cancelAnimationFrame(revealFrame.current);
+        layerMotion.current?.destroy();
+        markerMotion.current?.destroy();
+        layerMotion.current = null;
+        markerMotion.current = null;
         cancelAnimationFrame(colourFrame.current);
         cancelAnimationFrame(dateFrame.current);
         markers.current = [];
@@ -851,6 +870,7 @@ export const MapView = forwardRef<MapHandle, Props>(
             ? "#deddd5"
             : "#b39476",
         );
+        if (color === base) layerMotion.current?.syncColours();
       };
       const start = performance.now();
       let previous = 0;
@@ -871,26 +891,20 @@ export const MapView = forwardRef<MapHandle, Props>(
     useEffect(() => {
       const m = mapRef.current;
       if (!ready || !m) return;
-      const visibility = (ids: string[], show: boolean) =>
-        ids.forEach((id) =>
-          m.setLayoutProperty(id, "visibility", show ? "visible" : "none"),
-        );
-      visibility(["buildings", "buildings-flat"], props.layers.buildings);
+      layerMotion.current?.setLayers(props.layers);
       // Parts have no reliable parent/date association, so exclude them from isolated chronological views.
-      visibility(
-        ["building-parts"],
-        props.layers.buildings &&
-          props.context === "none" &&
+      layerMotion.current?.setPartsVisible(
+        props.context === "none" &&
           props.period === null &&
           (props.timelineMode !== "buildings" ||
             (props.year === 2026 && props.showUnknown)),
       );
-      visibility(["water", "green", "trees"], props.layers.landscape);
-      visibility(["rail", "station"], props.layers.transit);
-      visibility(["roads", "road-casing"], props.layers.streets);
+      if (props.chronologyPlaying) layerMotion.current?.finish();
+      updateLabels.current();
     }, [
       ready,
       props.layers,
+      props.chronologyPlaying,
       props.context,
       props.period,
       props.timelineMode,
@@ -915,7 +929,16 @@ export const MapView = forwardRef<MapHandle, Props>(
         container.current.dataset.chronologyYear = String(props.year);
         container.current.dataset.context = props.context;
       }
-      if (key === temporalKey.current) return;
+      const syncSky = () => {
+        if (!props.chronologyPlaying && skyTemporalKey.current !== key) {
+          layerMotion.current?.syncFilter("buildings");
+          skyTemporalKey.current = key;
+        }
+      };
+      if (key === temporalKey.current) {
+        syncSky();
+        return;
+      }
       temporalKey.current = key;
       if (container.current) container.current.dataset.settled = "false";
       const conditions: ["all", ...ExpressionSpecification[]] = [
@@ -964,6 +987,7 @@ export const MapView = forwardRef<MapHandle, Props>(
         );
       m.setFilter("buildings", conditions);
       m.setFilter("buildings-flat", conditions);
+      syncSky();
       updateLabels.current();
       shownDates.current = new Set(eligible.map((f) => f.id));
       if (newly.length && !reduced()) {
@@ -981,6 +1005,7 @@ export const MapView = forwardRef<MapHandle, Props>(
     }, [
       ready,
       props.year,
+      props.chronologyPlaying,
       props.timelineMode,
       props.period,
       props.showUnknown,
@@ -998,6 +1023,16 @@ export const MapView = forwardRef<MapHandle, Props>(
       if (props.selectedId)
         m.setFeatureState(
           { source: "city", id: props.selectedId },
+          { selected: true },
+        );
+      if (previousSelection.current)
+        m.setFeatureState(
+          { source: "sky-city", id: previousSelection.current },
+          { selected: false },
+        );
+      if (props.selectedId)
+        m.setFeatureState(
+          { source: "sky-city", id: props.selectedId },
           { selected: true },
         );
       previousSelection.current = props.selectedId;
@@ -1033,9 +1068,9 @@ export const MapView = forwardRef<MapHandle, Props>(
         const visible =
           props.layers.heritage &&
           (props.timelineMode !== "heritage" || h.year <= props.year) &&
-          (props.lens === "all" || h.lenses?.includes(props.lens));
+          (props.lens === "all" || !!h.lenses?.includes(props.lens));
         const el = marker.getElement();
-        el.classList.toggle("marker-hidden", !visible);
+        markerMotion.current?.set(el, visible, id);
         el.setAttribute("aria-hidden", String(!visible));
         el.tabIndex = visible ? 0 : -1;
         el.classList.toggle("active", props.selectedId === id);
