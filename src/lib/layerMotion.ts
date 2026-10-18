@@ -23,7 +23,17 @@ export function dropOffset(
   phase: number,
   distance: number,
 ): number {
-  return distance * Math.pow(1 - dropProgress(progress, phase), 2);
+  return fallOffset(dropProgress(progress, phase), distance);
+}
+
+// Constant acceleration until impact, then one small ballistic rebound.
+// The mass never passes below its real footprint or changes its thickness.
+export const IMPACT = 0.78;
+export function fallOffset(progress: number, distance: number): number {
+  const t = Math.max(0, Math.min(1, progress));
+  if (t <= IMPACT) return distance * (1 - (t / IMPACT) ** 2);
+  const bounce = (t - IMPACT) / (1 - IMPACT);
+  return distance * 0.025 * 4 * bounce * (1 - bounce);
 }
 
 export const COHORTS = 8;
@@ -69,7 +79,16 @@ export class LayerMotion {
   private partsVisible = true;
   private state: Record<
     MovingLayer,
-    { value: number; from: number; target: number; start: number }
+    {
+      value: number;
+      from: number;
+      target: number;
+      start: number;
+      distance: number;
+      offsets: number[];
+      origins: number[];
+      stagger: boolean;
+    }
   >;
   constructor(
     private map: LibreMap,
@@ -157,7 +176,21 @@ export class LayerMotion {
     this.state = Object.fromEntries(
       keys.map((key) => {
         const value = layers[key] ? 1 : 0;
-        return [key, { value, from: value, target: value, start: 0 }];
+        const distance = this.skyDistance();
+        const offsets = Array(COHORTS).fill(value ? 0 : distance) as number[];
+        return [
+          key,
+          {
+            value,
+            from: value,
+            target: value,
+            start: 0,
+            distance,
+            offsets,
+            origins: [...offsets],
+            stagger: true,
+          },
+        ];
       }),
     ) as typeof this.state;
     keys.forEach((key) => this.paint(key));
@@ -189,6 +222,12 @@ export class LayerMotion {
         target = layers[key] ? 1 : 0;
       if (s.target === target) return;
       if (key === "buildings") this.syncFilter("buildings");
+      s.stagger = s.value === s.target;
+      if (s.stagger) {
+        s.distance = this.skyDistance();
+        s.offsets.fill(s.value ? 0 : s.distance);
+      }
+      s.origins = [...s.offsets];
       s.from = s.value;
       s.target = target;
       s.start = now;
@@ -245,14 +284,14 @@ export class LayerMotion {
         keys.forEach((key) => {
           const s = this.state[key];
           if (s.value === s.target) return;
-          const t = Math.max(
-            0,
-            Math.min(
-              1,
-              (now - s.start) / (DROP_DURATION * Math.abs(s.target - s.from)),
-            ),
-          );
-          s.value = t === 1 ? s.target : s.from + (s.target - s.from) * t;
+          // Keep a slow render from swallowing the entire fall. Normal frame
+          // cadence still completes in one second; stalled devices retain motion.
+          const step = Math.max(0, Math.min(64, now - s.start)) / DROP_DURATION;
+          s.start = now;
+          s.value =
+            s.target > s.value
+              ? Math.min(s.target, s.value + step)
+              : Math.max(s.target, s.value - step);
           this.paint(key);
         });
         last = now;
@@ -268,10 +307,29 @@ export class LayerMotion {
     this.notify();
     this.frame = requestAnimationFrame(tick);
   }
+  private skyDistance() {
+    return Math.max(
+      480,
+      Math.min(1400, this.map.getCanvas().clientHeight + 120),
+    );
+  }
   private paint(key: MovingLayer) {
     const s = this.state[key],
       p = s.value,
       moving = p !== s.target;
+    const elapsed = moving ? Math.abs((p - s.from) / (s.target - s.from)) : 1;
+    for (let c = 0; c < COHORTS; c++) {
+      const local = s.stagger
+        ? dropProgress(elapsed, c / (COHORTS - 1))
+        : elapsed;
+      s.offsets[c] = !moving
+        ? s.target
+          ? 0
+          : s.distance
+        : s.target
+          ? fallOffset(local, s.origins[c])
+          : s.origins[c] + (s.distance - s.origins[c]) * local ** 2;
+    }
     for (const id of groups[key]) {
       const allowed = id !== "building-parts" || this.partsVisible,
         type = prefix(id);
@@ -288,7 +346,8 @@ export class LayerMotion {
         );
       if (id === "buildings-flat") continue;
       for (let c = 0; c < COHORTS; c++) {
-        const progress = dropProgress(p, c / (COHORTS - 1));
+        // Do not spend a draw pass on cohorts still above the visible canvas.
+        const inView = s.offsets[c] < this.map.getCanvas().clientHeight;
         this.map.setLayoutProperty(
           `sky-${c}-${id}`,
           "visibility",
@@ -297,17 +356,17 @@ export class LayerMotion {
         this.map.setPaintProperty(
           `sky-${c}-${id}`,
           `${type}-opacity`,
-          moving && allowed ? alpha(id) * Math.min(1, progress / 0.1) : 0,
+          moving && allowed && inView ? alpha(id) : 0,
         );
         if (type === "circle")
           this.map.setPaintProperty(
             `sky-${c}-${id}`,
             "circle-stroke-opacity",
-            moving ? Math.min(1, progress / 0.1) : 0,
+            moving && inView ? 1 : 0,
           );
         this.map.setPaintProperty(`sky-${c}-${id}`, `${type}-translate`, [
           0,
-          -dropOffset(p, c / (COHORTS - 1), 200),
+          -s.offsets[c],
         ]);
       }
     }
@@ -329,6 +388,7 @@ export class MarkerDrop {
       translate: computed.translate === "none" ? "0px 0px" : computed.translate,
       opacity: computed.opacity,
     };
+    const interrupted = !!previous?.animation;
     previous?.animation?.cancel();
     const item: { visible: boolean; animation?: Animation } = { visible };
     this.items.set(el, item);
@@ -348,23 +408,25 @@ export class MarkerDrop {
     }
     el.style.visibility = "visible";
     el.dataset.motion = visible ? "falling" : "rising";
-    item.animation = el.animate(
-      [
-        from,
-        {
-          translate: visible ? "0px 0px" : "0px -180px",
-          opacity: visible ? "1" : "0",
-        },
-      ],
-      {
-        duration: DROP_DURATION * (1 - STAGGER),
-        delay: dropPhase(id) * DROP_DURATION * STAGGER,
-        easing: visible
-          ? "cubic-bezier(.2,.65,.3,1)"
-          : "cubic-bezier(.65,0,.9,.4)",
-        fill: "both",
-      },
-    );
+    const distance = Math.max(480, Math.min(1400, innerHeight + 120));
+    const fromY = interrupted
+      ? Number.parseFloat(from.translate.split(" ")[1] || "0")
+      : visible
+        ? -distance
+        : 0;
+    const frames = Array.from({ length: 61 }, (_, i) => {
+      const t = i / 60;
+      const y = visible
+        ? -fallOffset(t, -fromY)
+        : fromY + (-distance - fromY) * t ** 2;
+      return { offset: t, translate: `0px ${y}px`, opacity: "1" };
+    });
+    item.animation = el.animate(frames, {
+      duration: DROP_DURATION * (1 - STAGGER),
+      delay: interrupted ? 0 : dropPhase(id) * DROP_DURATION * STAGGER,
+      easing: "linear",
+      fill: "both",
+    });
     item.animation.onfinish = finish;
   }
   finish() {

@@ -3,6 +3,8 @@ import { createExpression } from "@maplibre/maplibre-gl-style-spec";
 import type { Map as LibreMap } from "maplibre-gl";
 import {
   DROP_DURATION,
+  fallOffset,
+  IMPACT,
   LayerMotion,
   dropOffset,
   dropPhase,
@@ -15,7 +17,7 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 describe("Staggered layer drop", () => {
-  it("starts every cohort within 240ms and lands within a second without overshoot", () => {
+  it("starts every cohort within 240ms and lands within a second with downward acceleration and a small rebound", () => {
     expect(DROP_DURATION).toBe(1000);
     const phases = Array.from({ length: 100 }, (_, i) => dropPhase(`way/${i}`));
     expect(new Set(phases).size).toBeGreaterThan(10);
@@ -23,14 +25,19 @@ describe("Staggered layer drop", () => {
       expect(dropOffset(0, phase, 200)).toBe(200);
       expect(dropOffset(1, phase, 200)).toBe(0);
       expect(dropProgress(0.25, phase)).toBeGreaterThan(0);
-      let previous = 200;
+
       for (let t = 0; t <= 100; t++) {
         const offset = dropOffset(t / 100, phase, 200);
         expect(offset).toBeGreaterThanOrEqual(0);
-        expect(offset).toBeLessThanOrEqual(previous);
-        previous = offset;
+        expect(offset).toBeLessThanOrEqual(200);
       }
     }
+    const first = fallOffset(0, 1000) - fallOffset(0.2, 1000);
+    const next = fallOffset(0.2, 1000) - fallOffset(0.4, 1000);
+    expect(next).toBeGreaterThan(first * 2);
+    expect(fallOffset(IMPACT, 1000)).toBeCloseTo(0);
+    expect(fallOffset((IMPACT + 1) / 2, 1000)).toBeCloseTo(25);
+    expect(fallOffset(1, 1000)).toBe(0);
     expect(dropOffset(0.5, 0, 200)).not.toBe(dropOffset(0.5, 1, 200));
   });
   it("retains recorded roof/base heights while whole masses translate", () => {
@@ -65,16 +72,20 @@ describe("Staggered layer drop", () => {
     vi.stubGlobal("cancelAnimationFrame", (frame: number) =>
       frames.delete(frame),
     );
-    const tick = (time: number) => {
+    const frame = (time: number) => {
       now = time;
       const pending = [...frames.values()];
       frames.clear();
       pending.forEach((cb) => cb(now));
     };
+    const tick = (time: number) => {
+      while (now < time) frame(Math.min(time, now + 16));
+    };
     const paint = vi.fn(),
       state = vi.fn(),
       visibility = vi.fn();
     const map = {
+      getCanvas: () => ({ clientHeight: 900 }),
       addSource: vi.fn(),
       addLayer: vi.fn(),
       setFilter: vi.fn(),
@@ -142,6 +153,17 @@ describe("Staggered layer drop", () => {
     expect(
       visibility.mock.calls.filter(([id]) => id === "sky-0-buildings").at(-1),
     ).toEqual(["sky-0-buildings", "visibility", "none"]);
+    expect(frames.size).toBe(0);
+    instant = false;
+    motion.setLayers(DEFAULT_LAYERS);
+    expect(translation()).toBeLessThan(-900);
+    frame(5000);
+    expect(translation()).toBeLessThan(-900);
+    tick(5300);
+    expect(translation()).toBeGreaterThan(-900);
+    expect(translation()).toBeLessThan(0);
+    motion.finish();
+    expect(translation()).toBeCloseTo(0);
     expect(frames.size).toBe(0);
     motion.destroy();
   });

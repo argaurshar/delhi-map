@@ -1,6 +1,6 @@
 # Sky-drop release validation — 18 October 2026
 
-- 26 unit tests pass. New checks evaluate MapLibre expressions to verify rigid building/part translation, stagger timing, smooth reversal and fixed paint expressions during motion.
+- 26 unit tests pass. New checks evaluate MapLibre expressions to verify rigid building/part translation, stagger timing, downward acceleration, impact and bounded rebound, smooth reversal, offscreen starts, protection against skipped motion after a stalled frame, and fixed paint expressions during motion.
 - TypeScript and the GitHub Pages production build pass.
 - The layer-motion browser suite passes on desktop and mobile: all five switches, visible drop/lift states, rapid reversals, independent heritage-marker staggering, replay, tour interruption, 2D/3D and runtime reduced motion.
 - The existing animation suite passes: chronology geometry, histogram/counts, hover, context and shared-view restoration, marker filtering and mobile controls.
