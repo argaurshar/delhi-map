@@ -53,7 +53,7 @@ export function massingPaint(parts = false) {
 }
 const groups: Record<MovingLayer, string[]> = {
   buildings: ["buildings", "buildings-flat", "building-parts"],
-  landscape: ["green", "water", "trees"],
+  landscape: ["green", "water", "paved", "trees"],
   transit: ["rail", "station"],
   streets: ["roads", "road-casing"],
 };
@@ -61,7 +61,7 @@ const keys = Object.keys(groups) as MovingLayer[];
 const alpha = (id: string) =>
   ["buildings", "building-parts"].includes(id)
     ? 0.96
-    : ["green", "water", "buildings-flat"].includes(id)
+    : ["green", "water", "paved", "buildings-flat"].includes(id)
       ? 0.85
       : id === "trees"
         ? 0.65
@@ -69,7 +69,7 @@ const alpha = (id: string) =>
 const prefix = (id: string) =>
   ["buildings", "building-parts"].includes(id)
     ? "fill-extrusion"
-    : ["buildings-flat", "green", "water"].includes(id)
+    : ["buildings-flat", "green", "water", "paved"].includes(id)
       ? "fill"
       : ["trees", "station"].includes(id)
         ? "circle"

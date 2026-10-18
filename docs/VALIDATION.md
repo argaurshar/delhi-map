@@ -1,4 +1,14 @@
-# Sky-drop release validation — 18 October 2026
+# Urban detail and reference audit — 18 October 2026
+
+- REA 6.5.0 from the corrected `morluto/rea` repository analysed the captured Amsterdam `app.js`: one selected file, no parse failures. See [the reference audit](REFERENCE_AUDIT.md) for its evidence identity, observed interface, source-derived mechanisms and coverage limits. MCP registration is not claimed.
+- All **32 unit tests**, three source-extraction tests, TypeScript, formatting and the GitHub Pages production build pass.
+- The urban browser workflow passes: bright default use palette, actual rendered use/access categories, lower construction-date bound, normalized empty/out-of-range year inputs, filter changes pausing the guided tour, shared-filter restoration, exact source names, anonymous-record handling, hard-surface dossier, clickable exact-record labels, PNG export and mobile controls. No browser errors occurred.
+- The full research browser workflow passes: map/2D/3D/layers, source-linked heritage, study radius/polygon/import validation, footprint filtering, CSV/GeoJSON/PNG/brief exports, tables, comparison, timeline playback, shared views and mobile selection. CSV and GeoJSON retain **99** records in the tested Connaught Place selection. New CSV columns retain classification and original access/ownership/surface/name-source evidence separately. No external runtime requests occurred.
+- The layer-motion browser suite passes all five switches, actual falling massing, rapid reversal, marker staggering, replay, tour interruption, 2D/3D, runtime reduced motion and mobile. Software WebGL measured an overview replay completing in **11.1 seconds**, because the existing animation caps time advancement during slow frames. Its completion wait now allows 30 seconds; intermediate movement and final-state assertions remain. This does not establish a one-second wall-clock duration on slow devices.
+- All **114,401** pre-existing geometries, IDs, kinds, heights, levels, dates, uses and centers are preserved; overview statistics remain unchanged. Added **299** valid area polygons: 47 explicitly hard surfaces, three unpaved/soft surfaces and 249 unknown. Gzip expands exactly to the GeoJSON. Cache revision URLs ensure returning browsers request the enriched data.
+- Recorded building names: **1,239**. Building access tags: **29**. Building ownership-type tags: **0**. Missing names, use, dates, access and ownership remain explicit unknowns. Colours do not add factual coverage.
+
+## Earlier sky-drop release validation — 18 October 2026
 
 - 26 unit tests pass. New checks evaluate MapLibre expressions to verify rigid building/part translation, stagger timing, downward acceleration, impact and bounded rebound, smooth reversal, offscreen starts, protection against skipped motion after a stalled frame, and fixed paint expressions during motion.
 - TypeScript and the GitHub Pages production build pass.

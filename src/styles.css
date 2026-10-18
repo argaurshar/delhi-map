@@ -3006,3 +3006,77 @@ td a {
 .reviewed-evidence .source-link {
   overflow-wrap: anywhere;
 }
+
+/* Recorded-use and ground-surface research controls. */
+.research-filters {
+  padding: 20px 22px;
+  border-top: 1px solid var(--line, #deded3);
+}
+.research-filters select {
+  width: 100%;
+  min-height: 36px;
+  border: 1px solid #d4d6cd;
+  border-radius: 5px;
+  padding: 6px 8px;
+  background: #fffdf7;
+  font: inherit;
+  font-size: 12px;
+  color: #243c35;
+}
+.research-filters .field-label {
+  margin-top: 14px;
+}
+.year-range-fields {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin: 16px 0;
+}
+.year-range-fields label {
+  font-size: 11px;
+  color: #526057;
+}
+.year-range-fields input {
+  width: 100%;
+  margin-top: 6px;
+  min-height: 34px;
+  border: 1px solid #d4d6cd;
+  border-radius: 4px;
+  padding: 5px 7px;
+  font: inherit;
+  background: #fffdf7;
+}
+.unknown-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 12px;
+}
+.surface-legend {
+  display: grid;
+  gap: 8px;
+  margin-top: 16px;
+  font-size: 11px;
+}
+.surface-legend span {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.surface-legend i {
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+}
+.colour-section .segmented {
+  flex-wrap: wrap;
+}
+.context-map-label {
+  cursor: pointer;
+  border: 1px solid #c7cbbc;
+  pointer-events: auto;
+}
+.context-map-label:focus-visible {
+  outline: 2px solid #276cff;
+  outline-offset: 2px;
+}

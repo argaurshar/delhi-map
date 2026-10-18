@@ -36,6 +36,17 @@ import turfArea from "@turf/area";
 import bbox from "@turf/bbox";
 import circle from "@turf/circle";
 import { MapView, type MapHandle } from "./components/MapView";
+import {
+  USE_CATEGORIES,
+  ACCESS_CATEGORIES,
+  DEFAULT_RESEARCH_FILTERS,
+  matchesResearch,
+  featureName,
+  featureTitle,
+  featureAddress,
+  useDefinition,
+  type ResearchFilters,
+} from "./lib/urban";
 import { Chronology } from "./components/Chronology";
 import { ContextPanel } from "./components/ContextPanel";
 import {
@@ -59,7 +70,7 @@ import {
 import { CinematicControls } from "./components/CinematicControls";
 import { HeritagePhoto, HeritageDetails } from "./components/HeritageProfile";
 import { BuildingProfile } from "./components/BuildingProfile";
-import { loadCity } from "./lib/loadData";
+import { loadCity, DATA_REVISION } from "./lib/loadData";
 import { centerOf } from "./lib/buildings";
 import { Modal } from "./components/Modal";
 import {
@@ -168,7 +179,7 @@ export default function App() {
   const [layers, setLayers] = useState<Layers>(
     initial?.layers ?? DEFAULT_LAYERS,
   );
-  const [theme, setTheme] = useState<Theme>(initial?.theme ?? "era");
+  const [theme, setTheme] = useState<Theme>(initial?.theme ?? "use");
   const [size, setSize] = useState<SizeFilter>(initial?.size ?? "all");
   const [area, setArea] = useState<StudyArea | null>(initial?.area ?? null);
   const [areaName, setAreaName] = useState(initial?.areaName ?? "Whole pilot");
@@ -186,6 +197,9 @@ export default function App() {
     initial?.period ?? null,
   );
   const [showUnknown, setShowUnknown] = useState(initial?.showUnknown ?? true);
+  const [research, setResearch] = useState<ResearchFilters>(
+    initial?.research ?? DEFAULT_RESEARCH_FILTERS,
+  );
   const [speed, setSpeed] = useState(1);
   const [reduced, setReduced] = useState(
     window.matchMedia("(prefers-reduced-motion: reduce)").matches,
@@ -194,9 +208,11 @@ export default function App() {
     () =>
       data?.features.filter(
         (f) =>
-          f.properties.kind === "building" && matchesSize(f.properties, size),
+          f.properties.kind === "building" &&
+          matchesSize(f.properties, size) &&
+          matchesResearch(f, research),
       ) ?? [],
-    [data, size],
+    [data, size, research],
   );
   const datedRecords = useMemo(
     () => buildingDateRecords(sizeFeatures, "all", context, period),
@@ -283,9 +299,12 @@ export default function App() {
         if (!r.ok) throw new Error("The analysis overview is unavailable.");
         return r.json();
       }),
-      fetch(`${import.meta.env.BASE_URL}data/manifest.json`, {
-        signal: controller.signal,
-      }).then((r) => {
+      fetch(
+        `${import.meta.env.BASE_URL}data/manifest.json?v=${DATA_REVISION}`,
+        {
+          signal: controller.signal,
+        },
+      ).then((r) => {
         if (!r.ok) throw new Error("The dataset manifest is unavailable.");
         return r.json();
       }),
@@ -348,10 +367,20 @@ export default function App() {
   useEffect(() => {
     if (modal || drawMode) setPlaying(false);
   }, [modal, drawMode]);
+  function changeResearch(
+    next: ResearchFilters | ((r: ResearchFilters) => ResearchFilters),
+  ) {
+    setMotionInterrupt((i) => i + 1);
+    setPlaying(false);
+    setSelected(null);
+    setResearch(next);
+  }
   function changeYear(value: number) {
     setMotionInterrupt((i) => i + 1);
     setPlaying(false);
     setYear(value);
+    if (value < research.yearFrom)
+      setResearch((r) => ({ ...r, yearFrom: value }));
     setSelected(null);
   }
   function changeTimeline(value: TimelineMode) {
@@ -364,6 +393,7 @@ export default function App() {
       setTheme("era");
       setLayers((l) => ({ ...l, buildings: true }));
     } else {
+      setResearch((r) => ({ ...r, yearFrom: FIRST_YEAR }));
       setPeriod(null);
       setLayers((l) => ({ ...l, heritage: true }));
     }
@@ -383,7 +413,8 @@ export default function App() {
     setMotionInterrupt((i) => i + 1);
     setSelected(null);
     if (replay || !playing) {
-      if (replay || year >= LAST_YEAR) setYear(FIRST_YEAR);
+      if (replay || year >= LAST_YEAR)
+        setYear(timelineMode === "buildings" ? research.yearFrom : FIRST_YEAR);
       setLayers((l) => ({
         ...l,
         [timelineMode === "buildings" ? "buildings" : "heritage"]: true,
@@ -443,21 +474,31 @@ export default function App() {
       data?.features
         .filter(
           (f) =>
-            ["building", "station", "place"].includes(f.properties.kind) &&
-            ((!!f.properties.name &&
-              f.properties.name.toLowerCase().includes(q)) ||
-              (!!q && f.properties.id.includes(q))),
+            ["building", "station", "place", "paved", "green"].includes(
+              f.properties.kind,
+            ) &&
+            !!q &&
+            [
+              featureName(f) ?? "",
+              featureAddress(f),
+              f.properties.id,
+              ...Object.entries(f.properties.tags ?? {})
+                .filter(([k]) => k.startsWith("name:") || k === "alt_name")
+                .map(([, v]) => v),
+            ].some((v) => v.toLowerCase().includes(q)),
         )
         .slice(0, 8)
         .map((f) => ({
           id: f.properties.id,
-          name: f.properties.name || `Building ${f.properties.id}`,
+          name: featureTitle(f),
           sub:
             f.properties.kind === "station"
               ? "Station record · OSM"
               : f.properties.kind === "place"
                 ? "Place · OSM"
-                : "Building · OSM",
+                : f.properties.kind === "building"
+                  ? "Building · OSM"
+                  : "Mapped space · OSM",
           item: f,
         })) ?? [];
     return [...landmarks, ...buildings].slice(0, 8);
@@ -477,6 +518,7 @@ export default function App() {
   function selectHeritage(id: string, fromTour = false) {
     setPlaying(false);
     if (fromTour) {
+      setResearch((r) => ({ ...r, yearFrom: FIRST_YEAR }));
       setTimelineMode("heritage");
       setContext("none");
       setPeriod(null);
@@ -508,6 +550,10 @@ export default function App() {
       setPeriod(null);
       setShowUnknown(true);
       setContext("none");
+      if (!matchesResearch(feature, research)) {
+        setResearch(DEFAULT_RESEARCH_FILTERS);
+        notify("Map filters reset to show the selected record.");
+      }
     }
     if (window.innerWidth < 900) setPanelOpen(false);
     setMotionInterrupt((i) => i + 1);
@@ -525,6 +571,10 @@ export default function App() {
       ...l,
       buildings: feature.properties.kind === "building" ? true : l.buildings,
       transit: feature.properties.kind === "station" ? true : l.transit,
+      landscape: ["paved", "green", "water"].includes(feature.properties.kind)
+        ? true
+        : l.landscape,
+      streets: feature.properties.kind === "road" ? true : l.streets,
     }));
     if (fly) map.current?.flyTo(centerOf(feature), 17);
   }
@@ -592,6 +642,7 @@ export default function App() {
       context,
       period,
       showUnknown,
+      research,
       mode,
       area,
       areaName,
@@ -669,7 +720,7 @@ export default function App() {
         const exportWidth = source.clientWidth * exportScale;
         const exportHeight = source.clientHeight * exportScale;
         canvas.width = Math.round(exportWidth * ratio);
-        canvas.height = Math.round((exportHeight + 180) * ratio);
+        canvas.height = Math.round((exportHeight + 270) * ratio);
         const ctx = canvas.getContext("2d")!;
         ctx.fillStyle = "#f7f5ef";
         ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -710,6 +761,11 @@ export default function App() {
           24,
           y + 102,
         );
+        ctx.fillText(
+          `Map use: ${research.use} · Access: ${research.access} · Built from ${research.yearFrom}`,
+          24,
+          y + 124,
+        );
         const activeContext = CONTEXTS.find((c) => c.id === context)!;
         const legend =
           context !== "none"
@@ -717,48 +773,52 @@ export default function App() {
             : theme === "footprint"
               ? labels
               : theme === "use"
-                ? [
-                    "Commercial",
-                    "Residential",
-                    "Religious",
-                    "Institutional / transit",
-                    "Unknown / other",
-                  ]
-                : theme === "era"
-                  ? [
-                      "Before 1700",
-                      "1700–1946",
-                      "1947–1999",
-                      "2000 onward",
-                      "Unrecorded date",
-                    ]
-                  : [
-                      "Under 10 m",
-                      "10–20 m",
-                      "20–40 m",
-                      "Over 40 m",
-                      "Unknown",
-                    ];
+                ? USE_CATEGORIES.map((c) => c.label)
+                : theme === "access"
+                  ? ACCESS_CATEGORIES.map((c) => c.label)
+                  : theme === "era"
+                    ? [
+                        "Before 1700",
+                        "1700–1946",
+                        "1947–1999",
+                        "2000 onward",
+                        "Unrecorded date",
+                      ]
+                    : [
+                        "Under 10 m",
+                        "10–20 m",
+                        "20–40 m",
+                        "Over 40 m",
+                        "Unknown",
+                      ];
         const exportColours =
           context !== "none"
             ? [...activeContext.categories.map((c) => c[2]), "#e0dfd7"]
             : theme === "use"
-              ? ["#c89854", "#7b9585", "#bd7d62", "#607d89", "#c9c7b9"]
-              : theme === "era"
-                ? ["#9d5d55", "#c28b53", "#6e9989", "#6b8caf", "#bfc4be"]
-                : [...colours, "#c9c7b9"];
+              ? USE_CATEGORIES.map((c) => c.color)
+              : theme === "access"
+                ? ACCESS_CATEGORIES.map((c) => c.color)
+                : theme === "era"
+                  ? ["#9d5d55", "#c28b53", "#6e9989", "#6b8caf", "#bfc4be"]
+                  : [...colours, "#c9c7b9"];
         legend.forEach((l, i) => {
           ctx.fillStyle = exportColours[i];
           ctx.fillRect(
             24 + (i % 3) * 175,
-            y + 118 + Math.floor(i / 3) * 20,
+            y + 142 + Math.floor(i / 3) * 20,
             10,
             10,
           );
           ctx.fillStyle = "#243c35";
           ctx.font = "11px Inter";
-          ctx.fillText(l, 40 + (i % 3) * 175, y + 127 + Math.floor(i / 3) * 20);
+          ctx.fillText(l, 40 + (i % 3) * 175, y + 151 + Math.floor(i / 3) * 20);
         });
+        ctx.fillStyle = "#243c35";
+        ctx.fillText(
+          "Ground: green space · cyan water · amber roads · coral hard paving · tan unpaved · sand unknown surface",
+          24,
+          y + 246,
+        );
         const blob = await new Promise<Blob>((resolve, reject) =>
           canvas.toBlob(
             (b) => (b ? resolve(b) : reject(new Error("Image export failed"))),
@@ -880,6 +940,7 @@ export default function App() {
             context={context}
             period={period}
             showUnknown={showUnknown}
+            research={research}
             onMotionInterrupted={() => {
               setMotionInterrupt((i) => i + 1);
               setPlaying(false);
@@ -1028,6 +1089,316 @@ export default function App() {
               </button>
             ))}
           </div>
+          <div className="colour-section">
+            <div className="section-heading">
+              <span>COLOUR BUILDINGS BY</span>
+              <SlidersHorizontal size={13} />
+            </div>
+            <div className="segmented">
+              {(["use", "era", "access", "footprint", "height"] as Theme[]).map(
+                (t) => (
+                  <button
+                    key={t}
+                    className={
+                      context === "none" && theme === t ? "active" : ""
+                    }
+                    onClick={() => {
+                      setTheme(t);
+                      setContext("none");
+                      if (t !== "era") setPeriod(null);
+                    }}
+                  >
+                    {t === "footprint"
+                      ? "Footprint"
+                      : t === "use"
+                        ? "Use"
+                        : t === "height"
+                          ? "Height"
+                          : t === "access"
+                            ? "Access"
+                            : "Date"}
+                  </button>
+                ),
+              )}
+            </div>
+            {context !== "none" && (
+              <p className="micro-note">
+                The active context uses its own palette above. Choose a colour
+                mode to leave this context.
+              </p>
+            )}
+            {context === "none" && (
+              <div className="legend">
+                {theme === "use" || theme === "access" ? (
+                  (theme === "use" ? USE_CATEGORIES : ACCESS_CATEGORIES).map(
+                    (c) => (
+                      <button
+                        className="period-row"
+                        key={c.id}
+                        aria-pressed={
+                          (theme === "use" ? research.use : research.access) ===
+                          c.id
+                        }
+                        onClick={() => {
+                          changeResearch((r) => ({
+                            ...r,
+                            [theme === "use" ? "use" : "access"]:
+                              (theme === "use" ? r.use : r.access) === c.id
+                                ? "all"
+                                : c.id,
+                          }));
+                          setSelected(null);
+                        }}
+                      >
+                        <span
+                          className="swatch"
+                          style={{ background: c.color }}
+                        />
+                        <span>{c.label}</span>
+                      </button>
+                    ),
+                  )
+                ) : theme === "era" ? (
+                  PERIODS.map((p, i) => (
+                    <button
+                      className="period-row"
+                      key={p.id}
+                      aria-pressed={period === p.id}
+                      onClick={() => {
+                        setPeriod(period === p.id ? null : p.id);
+                        setContext("none");
+                        setTimelineMode("buildings");
+                        setYear(LAST_YEAR);
+                        setPlaying(false);
+                        setSelected(null);
+                        setMotionInterrupt((v) => v + 1);
+                        setLayers((l) => ({ ...l, buildings: true }));
+                      }}
+                    >
+                      <span
+                        className="swatch"
+                        style={{ background: p.color }}
+                      />
+                      <span>{p.label}</span>
+                      <small>{periodCounts[i]}</small>
+                    </button>
+                  ))
+                ) : (
+                  <>
+                    {(theme === "footprint"
+                      ? labels
+                      : ["Under 10 m", "10–20 m", "20–40 m", "Over 40 m"]
+                    ).map((label, i) => (
+                      <div key={label}>
+                        <span
+                          className="swatch"
+                          style={{
+                            background: colours[i],
+                          }}
+                        />
+                        <span>{label}</span>
+                        {theme === "footprint" && (
+                          <small>
+                            {analysis.result
+                              ? fmt(analysis.result.bins[i])
+                              : "—"}
+                          </small>
+                        )}
+                      </div>
+                    ))}
+                  </>
+                )}
+                {theme === "era" && (
+                  <p className="micro-note">
+                    Click a period to isolate dated buildings. Click it again to
+                    restore all periods.
+                  </p>
+                )}
+                {(theme === "height" || theme === "era") && (
+                  <div>
+                    <span
+                      className="swatch"
+                      style={{ background: "#c9c7b9" }}
+                    />
+                    <span>Unknown / other</span>
+                  </div>
+                )}
+              </div>
+            )}
+            <label className="field-label" htmlFor="footprint-filter">
+              Footprint filter
+            </label>
+            <div className="select-wrap">
+              <select
+                id="footprint-filter"
+                value={size}
+                onChange={(e) => {
+                  setSize(e.target.value as SizeFilter);
+                  setSelected(null);
+                }}
+              >
+                <option value="all">All mapped buildings</option>
+                <option value="small">Small · under 100 m²</option>
+                <option value="medium">Medium · 100–500 m²</option>
+                <option value="large">Large · 500 m² and above</option>
+              </select>
+              <ChevronDown size={15} />
+            </div>
+            <p className="micro-note">
+              {theme === "era"
+                ? "Dates combine reviewed building sources and recorded OSM start dates. Open a building for its date basis and source. Grey buildings have no usable date."
+                : theme === "height"
+                  ? `Only ${heightCount} records have height estimates. Grey means unknown.`
+                  : theme === "use"
+                    ? "OSM building tags; unclassified footprints remain unknown."
+                    : theme === "access"
+                      ? "Recorded access rules, not ownership. Public access can have conditions; inspect the original tag. Missing access stays unknown."
+                      : "Footprint area, not floor area. Legend counts follow the selected study area."}
+            </p>
+          </div>
+          <section className="research-filters">
+            <div className="section-heading">
+              <span>MAP FILTERS</span>
+              <button
+                className="text-button"
+                onClick={() => {
+                  changeResearch(DEFAULT_RESEARCH_FILTERS);
+                  setYear(LAST_YEAR);
+                  setShowUnknown(true);
+                  setPeriod(null);
+                  setSelected(null);
+                }}
+              >
+                Reset
+              </button>
+            </div>
+            <label className="field-label" htmlFor="use-filter">
+              Building use
+            </label>
+            <select
+              id="use-filter"
+              value={research.use}
+              onChange={(e) => {
+                changeResearch((r) => ({ ...r, use: e.target.value }));
+                setSelected(null);
+              }}
+            >
+              <option value="all">All recorded uses</option>
+              {USE_CATEGORIES.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.label}
+                </option>
+              ))}
+            </select>
+            <label className="field-label" htmlFor="access-filter">
+              Buildings & spaces: access
+            </label>
+            <select
+              id="access-filter"
+              value={research.access}
+              onChange={(e) => {
+                changeResearch((r) => ({ ...r, access: e.target.value }));
+                setSelected(null);
+              }}
+            >
+              <option value="all">All access records</option>
+              {ACCESS_CATEGORIES.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.label}
+                </option>
+              ))}
+            </select>
+            <div className="year-range-fields">
+              <label>
+                Built year from
+                <input
+                  aria-label="Built year from"
+                  type="number"
+                  min={FIRST_YEAR}
+                  max={year}
+                  key={`from-${research.yearFrom}`}
+                  defaultValue={research.yearFrom}
+                  onBlur={(e) => {
+                    const n = e.currentTarget.valueAsNumber;
+                    const next = Number.isFinite(n)
+                      ? Math.max(FIRST_YEAR, Math.min(year, Math.round(n)))
+                      : research.yearFrom;
+                    e.currentTarget.value = String(next);
+                    changeResearch((r) => ({ ...r, yearFrom: next }));
+                    setTimelineMode("buildings");
+                  }}
+                />
+              </label>
+              <label>
+                Built year through
+                <input
+                  aria-label="Built year through"
+                  type="number"
+                  min={research.yearFrom}
+                  max={LAST_YEAR}
+                  key={`through-${year}`}
+                  defaultValue={year}
+                  onBlur={(e) => {
+                    const n = e.currentTarget.valueAsNumber;
+                    const next = Number.isFinite(n)
+                      ? Math.min(
+                          LAST_YEAR,
+                          Math.max(research.yearFrom, Math.round(n)),
+                        )
+                      : year;
+                    e.currentTarget.value = String(next);
+                    changeYear(next);
+                    setTimelineMode("buildings");
+                  }}
+                />
+              </label>
+            </div>
+            <label className="unknown-checkbox">
+              <input
+                type="checkbox"
+                checked={showUnknown}
+                onChange={(e) => {
+                  setMotionInterrupt((i) => i + 1);
+                  setPlaying(false);
+                  setShowUnknown(e.target.checked);
+                  setTimelineMode("buildings");
+                  setSelected(null);
+                }}
+              />{" "}
+              Include undated buildings
+            </label>
+            <p className="micro-note">
+              Use and dates filter buildings. Access also filters mapped spaces
+              and routes; it does not establish ownership. Study statistics and
+              data exports use the boundary and footprint filter.
+            </p>
+            <div className="surface-legend">
+              <span>
+                <i style={{ background: "#87d85c" }} />
+                Green space
+              </span>
+              <span>
+                <i style={{ background: "#50cde5" }} />
+                Water
+              </span>
+              <span>
+                <i style={{ background: "#ffd477" }} />
+                Roads
+              </span>
+              <span>
+                <i style={{ background: "#ff9581" }} />
+                Recorded hard paving
+              </span>
+              <span>
+                <i style={{ background: "#c4b17d" }} />
+                Recorded unpaved surface
+              </span>
+              <span>
+                <i style={{ background: "#f2df9a" }} />
+                Mapped area · surface unknown
+              </span>
+            </div>
+          </section>
           <ContextPanel
             context={context}
             onContext={changeContext}
@@ -1087,148 +1458,6 @@ export default function App() {
               </div>
             )}
           </section>
-          <div className="colour-section">
-            <div className="section-heading">
-              <span>COLOUR BUILDINGS BY</span>
-              <SlidersHorizontal size={13} />
-            </div>
-            <div className="segmented">
-              {(["footprint", "use", "height", "era"] as Theme[]).map((t) => (
-                <button
-                  key={t}
-                  className={context === "none" && theme === t ? "active" : ""}
-                  onClick={() => {
-                    setTheme(t);
-                    setContext("none");
-                    if (t !== "era") setPeriod(null);
-                  }}
-                >
-                  {t === "footprint"
-                    ? "Footprint"
-                    : t === "use"
-                      ? "Use"
-                      : t === "height"
-                        ? "Height"
-                        : "Date"}
-                </button>
-              ))}
-            </div>
-            {context !== "none" && (
-              <p className="micro-note">
-                The active context uses its own palette above. Choose a colour
-                mode to leave this context.
-              </p>
-            )}
-            {context === "none" && (
-              <div className="legend">
-                {theme === "era" ? (
-                  PERIODS.map((p, i) => (
-                    <button
-                      className="period-row"
-                      key={p.id}
-                      aria-pressed={period === p.id}
-                      onClick={() => {
-                        setPeriod(period === p.id ? null : p.id);
-                        setContext("none");
-                        setTimelineMode("buildings");
-                        setYear(LAST_YEAR);
-                        setPlaying(false);
-                        setSelected(null);
-                        setMotionInterrupt((v) => v + 1);
-                        setLayers((l) => ({ ...l, buildings: true }));
-                      }}
-                    >
-                      <span
-                        className="swatch"
-                        style={{ background: p.color }}
-                      />
-                      <span>{p.label}</span>
-                      <small>{periodCounts[i]}</small>
-                    </button>
-                  ))
-                ) : (
-                  <>
-                    {(theme === "footprint"
-                      ? labels
-                      : theme === "use"
-                        ? [
-                            "Commercial / markets",
-                            "Residential",
-                            "Religious",
-                            "Institutional / transit",
-                          ]
-                        : ["Under 10 m", "10–20 m", "20–40 m", "Over 40 m"]
-                    ).map((label, i) => (
-                      <div key={label}>
-                        <span
-                          className="swatch"
-                          style={{
-                            background:
-                              theme === "use"
-                                ? ["#c89854", "#7b9585", "#bd7d62", "#607d89"][
-                                    i
-                                  ]
-                                : colours[i],
-                          }}
-                        />
-                        <span>{label}</span>
-                        {theme === "footprint" && (
-                          <small>
-                            {analysis.result
-                              ? fmt(analysis.result.bins[i])
-                              : "—"}
-                          </small>
-                        )}
-                      </div>
-                    ))}
-                  </>
-                )}
-                {theme === "era" && (
-                  <p className="micro-note">
-                    Click a period to isolate dated buildings. Click it again to
-                    restore all periods.
-                  </p>
-                )}
-                {theme !== "footprint" && (
-                  <div>
-                    <span
-                      className="swatch"
-                      style={{ background: "#c9c7b9" }}
-                    />
-                    <span>Unknown / other</span>
-                  </div>
-                )}
-              </div>
-            )}
-            <label className="field-label" htmlFor="footprint-filter">
-              Footprint filter
-            </label>
-            <div className="select-wrap">
-              <select
-                id="footprint-filter"
-                value={size}
-                onChange={(e) => {
-                  setSize(e.target.value as SizeFilter);
-                  setSelected(null);
-                }}
-              >
-                <option value="all">All mapped buildings</option>
-                <option value="small">Small · under 100 m²</option>
-                <option value="medium">Medium · 100–500 m²</option>
-                <option value="large">Large · 500 m² and above</option>
-              </select>
-              <ChevronDown size={15} />
-            </div>
-            <p className="micro-note">
-              {theme === "era"
-                ? "Dates combine reviewed building sources and recorded OSM start dates. Open a building for its date basis and source. Grey buildings have no usable date."
-                : theme === "height"
-                  ? `Only ${heightCount} records have height estimates. Grey means unknown.`
-                  : theme === "use"
-                    ? "OSM building tags; unclassified footprints remain unknown."
-                    : "Footprint area, not floor area. Legend counts follow the selected study area."}
-            </p>
-          </div>
           <button className="data-note" onClick={() => setModal("sources")}>
             <span className="data-dot" />
             <span>
@@ -1384,20 +1613,26 @@ export default function App() {
                         ? "Station record"
                         : featureSelection.properties.kind === "place"
                           ? "Mapped place"
-                          : "Building footprint"}
+                          : featureSelection.properties.kind === "building"
+                            ? "Building footprint"
+                            : "Mapped space or route"}
                     </span>
-                    <h2>
-                      {featureSelection.properties.name ||
-                        "An everyday building"}
-                    </h2>
+                    <h2>{featureTitle(featureSelection)}</h2>
                     <p className="subtle">{featureSelection.properties.id}</p>
+                    {!featureName(featureSelection) && (
+                      <p className="micro-note">
+                        No name is recorded for this exact feature. Its address
+                        and source ID identify the record; nearby places have
+                        separate profiles.
+                      </p>
+                    )}
                     <dl className="facts">
                       <div>
                         <dt>Recorded use</dt>
                         <dd>
-                          {featureSelection.properties.use === "yes"
-                            ? "Unknown"
-                            : featureSelection.properties.use}
+                          {featureSelection.properties.kind === "building"
+                            ? useDefinition(featureSelection).label
+                            : featureSelection.properties.use || "Not recorded"}
                         </dd>
                       </div>
                       {featureSelection.properties.kind === "building" && (
@@ -1427,11 +1662,13 @@ export default function App() {
                         <dd>{featureSelection.properties.snapshot}</dd>
                       </div>
                     </dl>
-                    <p className="micro-note">
-                      {featureSelection.properties.height_m === null
-                        ? "The 8 m extrusion is for visual context only. No measured height is available."
-                        : featureSelection.properties.height_method}
-                    </p>
+                    {featureSelection.properties.kind === "building" && (
+                      <p className="micro-note">
+                        {featureSelection.properties.height_m === null
+                          ? "The 8 m extrusion is for visual context only. No measured height is available."
+                          : featureSelection.properties.height_method}
+                      </p>
+                    )}
                     <a
                       href={featureSelection.properties.source_url}
                       className="source-link"
@@ -1839,7 +2076,7 @@ export default function App() {
                 Attribution & ODbL licence <ExternalLink size={12} />
               </a>
               <a
-                href={`${import.meta.env.BASE_URL}data/manifest.json`}
+                href={`${import.meta.env.BASE_URL}data/manifest.json?v=${DATA_REVISION}`}
                 target="_blank"
                 rel="noreferrer"
               >
@@ -1997,8 +2234,8 @@ export default function App() {
             Dataset: {manifest?.id}. Footprint filter: {size}. Map images
             include contextual buildings outside your study area. Data exports
             contain buildings matching the study boundary and footprint-size
-            filter. Timeline, period and context filters affect the map image,
-            not the research dataset.
+            filter. Use, access, timeline, period and context filters affect the
+            map image, not the research dataset.
           </p>
           {exportBusy && (
             <p role="status">

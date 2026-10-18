@@ -1,3 +1,9 @@
+import {
+  useCategory,
+  accessCategory,
+  featureAddress,
+  featureName,
+} from "./urban";
 import area from "@turf/area";
 import intersect from "@turf/intersect";
 import union from "@turf/union";
@@ -129,10 +135,18 @@ export function toCsv(
     "timeline_date_source",
     "reviewed_building_history",
     "reviewed_history_sources",
+    "use_category",
+    "access_category",
+    "recorded_access",
+    "access_conditions",
+    "ownership",
+    "owner",
+    "surface",
+    "name_source",
   ];
   const rows = result.features.map((f) => [
     f.properties.id,
-    f.properties.name,
+    featureName(f),
     Math.round(f.properties.area_m2 ?? 0),
     f.properties.selected_area_m2,
     f.properties.height_m,
@@ -144,16 +158,7 @@ export function toCsv(
     studyName,
     f.properties.use,
     f.properties.levels,
-    [
-      "addr:housenumber",
-      "addr:street",
-      "addr:suburb",
-      "addr:city",
-      "addr:postcode",
-    ]
-      .map((k) => f.properties.tags?.[k])
-      .filter(Boolean)
-      .join(", "),
+    featureAddress(f),
     f.properties.tags?.["building:material"],
     f.properties.tags?.["roof:shape"],
     f.properties.tags?.wikidata,
@@ -166,6 +171,14 @@ export function toCsv(
     buildingEvidence(f)
       ?.sources.map((s) => s.url)
       .join(" | "),
+    useCategory(f),
+    accessCategory(f),
+    f.properties.tags?.access,
+    f.properties.tags?.["access:conditional"],
+    f.properties.tags?.ownership,
+    f.properties.tags?.owner,
+    f.properties.tags?.surface,
+    f.properties.name_source,
   ]);
   return [keys, ...rows]
     .map((row) => row.map(escapeCsv).join(","))

@@ -32,7 +32,16 @@ import {
   type TimelineMode,
 } from "../lib/chronology";
 import { buildingYear } from "../lib/buildings";
-import { HERITAGE, PILOT } from "../lib/data";
+import {
+  USE_CATEGORIES,
+  ACCESS_CATEGORIES,
+  useCategory,
+  accessCategory,
+  featureName,
+  matchesResearch,
+  type ResearchFilters,
+} from "../lib/urban";
+import { HERITAGE, PILOT, matchesSize } from "../lib/data";
 import {
   LayerMotion,
   MarkerDrop,
@@ -60,6 +69,7 @@ interface Props {
   context: ContextId;
   period: PeriodId | null;
   showUnknown: boolean;
+  research: ResearchFilters;
   onMotionInterrupted: () => void;
   layers: Layers;
   theme: Theme;
@@ -103,37 +113,18 @@ const footprint: ExpressionSpecification = [
   2000,
   "#607d89",
 ];
-const usage: ExpressionSpecification = [
+const usage = [
   "match",
-  ["get", "use"],
-  [
-    "commercial",
-    "retail",
-    "market",
-    "marketplace",
-    "hotel",
-    "supermarket",
-    "mall",
-  ],
-  "#c89854",
-  ["house", "residential", "apartments"],
-  "#7b9585",
-  ["mosque", "church", "temple", "gurudwara", "place_of_worship"],
-  "#bd7d62",
-  [
-    "school",
-    "college",
-    "university",
-    "hospital",
-    "civic",
-    "public",
-    "train_station",
-    "railway_station",
-    "transportation",
-  ],
-  "#607d89",
-  "#c9c7b9",
-];
+  ["get", "use_class"],
+  ...USE_CATEGORIES.flatMap((c) => [c.id, c.color]),
+  "#c9a7ed",
+] as unknown as ExpressionSpecification;
+const access = [
+  "match",
+  ["get", "access_class"],
+  ...ACCESS_CATEGORIES.flatMap((c) => [c.id, c.color]),
+  "#bca7f4",
+] as unknown as ExpressionSpecification;
 const height: ExpressionSpecification = [
   "case",
   ["==", ["get", "height_m"], null],
@@ -163,7 +154,7 @@ export const MapView = forwardRef<MapHandle, Props>(
     const previousSelection = useRef<string | null>(null);
     const colourFrame = useRef(0),
       dateFrame = useRef(0);
-    const colourTarget = useRef<ExpressionSpecification>(era);
+    const colourTarget = useRef<ExpressionSpecification>(usage);
     const dated = useRef<{ id: string; year: number }[]>([]);
     const shownDates = useRef(new Set<string>());
     const temporalKey = useRef("");
@@ -318,6 +309,12 @@ export const MapView = forwardRef<MapHandle, Props>(
               ? m.queryRenderedFeatures({ layers: ["buildings"] })
               : [];
           container.current.dataset.visibleBuildings = String(rendered.length);
+          container.current.dataset.visibleUses = JSON.stringify([
+            ...new Set(rendered.map((f) => f.properties.use_class)),
+          ]);
+          container.current.dataset.visibleAccess = JSON.stringify([
+            ...new Set(rendered.map((f) => f.properties.access_class)),
+          ]);
           container.current.dataset.visibleDatedIds = JSON.stringify([
             ...new Set(
               rendered
@@ -352,7 +349,11 @@ export const MapView = forwardRef<MapHandle, Props>(
             properties: {
               id: f.properties.id,
               kind: f.properties.kind,
-              name: f.properties.name,
+              name: featureName(f),
+              use_class: useCategory(f),
+              access_class: accessCategory(f),
+              surface_status: f.properties.surface_status,
+              area_role: f.properties.area_role,
               use: f.properties.use,
               area_m2: f.properties.area_m2,
               height_m: f.properties.height_m,
@@ -393,7 +394,7 @@ export const MapView = forwardRef<MapHandle, Props>(
           type: "fill",
           source: "city",
           filter: ["==", "kind", "water"],
-          paint: { "fill-color": "#b7d1d0", "fill-opacity": 0.85 },
+          paint: { "fill-color": "#50cde5", "fill-opacity": 0.85 },
         });
         m.addLayer({
           id: "green",
@@ -401,9 +402,28 @@ export const MapView = forwardRef<MapHandle, Props>(
           source: "city",
           filter: ["==", "kind", "green"],
           paint: {
-            "fill-color": "#c6d4b5",
+            "fill-color": "#87d85c",
             "fill-opacity": 0.85,
-            "fill-outline-color": "#b7c8a6",
+            "fill-outline-color": "#4aab64",
+          },
+        });
+        m.addLayer({
+          id: "paved",
+          type: "fill",
+          source: "city",
+          filter: ["==", "kind", "paved"],
+          paint: {
+            "fill-color": [
+              "match",
+              ["get", "surface_status"],
+              "hard",
+              "#ff9581",
+              "soft",
+              "#c4b17d",
+              "#f2df9a",
+            ],
+            "fill-opacity": 0.85,
+            "fill-outline-color": "#cd8b67",
           },
         });
         m.addLayer({
@@ -412,7 +432,7 @@ export const MapView = forwardRef<MapHandle, Props>(
           source: "city",
           filter: ["==", "kind", "road"],
           paint: {
-            "line-color": "#d7d3c7",
+            "line-color": "#d99c4b",
             "line-width": [
               "interpolate",
               ["linear"],
@@ -430,7 +450,7 @@ export const MapView = forwardRef<MapHandle, Props>(
           source: "city",
           filter: ["==", "kind", "road"],
           paint: {
-            "line-color": "#fffdf7",
+            "line-color": "#ffd477",
             "line-width": ["interpolate", ["linear"], ["zoom"], 13, 0.7, 17, 9],
           },
         });
@@ -457,7 +477,7 @@ export const MapView = forwardRef<MapHandle, Props>(
           source: "city",
           filter: ["==", "kind", "building"],
           paint: {
-            "fill-color": footprint,
+            "fill-color": usage,
             "fill-opacity": 0.85,
             "fill-outline-color": "#e8e1d2",
           },
@@ -472,7 +492,7 @@ export const MapView = forwardRef<MapHandle, Props>(
               "case",
               ["boolean", ["feature-state", "selected"], false],
               "#e5a83e",
-              footprint,
+              usage,
             ],
             "fill-extrusion-height": [
               "*",
@@ -520,7 +540,7 @@ export const MapView = forwardRef<MapHandle, Props>(
               18,
               6,
             ],
-            "circle-color": "#6d9479",
+            "circle-color": "#39aa70",
             "circle-opacity": 0.65,
           },
         });
@@ -652,10 +672,22 @@ export const MapView = forwardRef<MapHandle, Props>(
           contextLabels.length = 0;
           if (m.getZoom() < 15.5) return;
           const names = new Set<string>();
-          for (const feature of data.features) {
+          const candidates = data.features.filter(
+            (f) =>
+              featureName(f) &&
+              f.properties.center &&
+              m.getBounds().contains(f.properties.center),
+          );
+          candidates.sort(
+            (a, b) =>
+              Number(b.properties.kind === "building") -
+              Number(a.properties.kind === "building"),
+          );
+          for (const feature of candidates) {
             const p = feature.properties;
             if (
-              !p.name ||
+              !featureName(feature) ||
+              !matchesResearch(feature, latest.current.research) ||
               !p.center ||
               names.has(p.name) ||
               !["road", "place", "building"].includes(p.kind) ||
@@ -666,7 +698,12 @@ export const MapView = forwardRef<MapHandle, Props>(
             if (p.kind === "building") {
               const view = latest.current,
                 y = buildingYear(feature);
-              if (!view.layers.buildings || !inPeriod(y, view.period)) continue;
+              if (
+                !view.layers.buildings ||
+                !matchesSize(p, view.size) ||
+                !inPeriod(y, view.period)
+              )
+                continue;
               if (
                 view.timelineMode === "buildings" &&
                 ((y !== null && y > view.year) ||
@@ -675,9 +712,15 @@ export const MapView = forwardRef<MapHandle, Props>(
                 continue;
             }
             names.add(p.name);
-            const el = document.createElement("span");
+            const el = document.createElement("button");
+            el.type = "button";
             el.className = "context-map-label";
-            el.textContent = p.name;
+            el.textContent = featureName(feature);
+            el.title = `${p.id} · exact mapped record`;
+            el.addEventListener("click", (e) => {
+              e.stopPropagation();
+              latest.current.onFeature(feature);
+            });
             contextLabels.push(
               new maplibregl.Marker({ element: el })
                 .setLngLat(p.center)
@@ -727,9 +770,16 @@ export const MapView = forwardRef<MapHandle, Props>(
               ? ["station"]
               : []),
             "places",
+            ...(latest.current.layers.landscape
+              ? ["paved", "green", "water"]
+              : []),
+            ...(latest.current.layers.streets ? ["roads"] : []),
           ],
         });
-        const id = features[0]?.properties?.id;
+        const hit =
+          features.find((f) => f.properties?.kind === "building") ??
+          features[0];
+        const id = hit?.properties?.id;
         const feature = latest.current.data.features.find(
           (f) => f.properties.id === id,
         );
@@ -752,6 +802,10 @@ export const MapView = forwardRef<MapHandle, Props>(
               ? ["station"]
               : []),
             "places",
+            ...(latest.current.layers.landscape
+              ? ["paved", "green", "water"]
+              : []),
+            ...(latest.current.layers.streets ? ["roads"] : []),
           ],
         })[0];
         const id = feature?.properties?.id ?? null;
@@ -828,6 +882,41 @@ export const MapView = forwardRef<MapHandle, Props>(
         mapRef.current = null;
       };
     }, []);
+    useEffect(() => {
+      const m = mapRef.current;
+      if (!ready || !m) return;
+      for (const [id, kind] of [
+        ["green", "green"],
+        ["water", "water"],
+        ["paved", "paved"],
+        ["trees", "tree"],
+        ["roads", "road"],
+        ["road-casing", "road"],
+        ["rail", "rail"],
+        ["station", "station"],
+        ["places", "place"],
+      ]) {
+        const filter: ExpressionSpecification = [
+          "all",
+          ["==", ["get", "kind"], kind],
+        ];
+        if (props.research.access !== "all")
+          filter.push(["==", ["get", "access_class"], props.research.access]);
+        m.setFilter(id, filter);
+      }
+      for (const id of [
+        "green",
+        "water",
+        "paved",
+        "trees",
+        "roads",
+        "road-casing",
+        "rail",
+        "station",
+      ])
+        layerMotion.current?.syncFilter(id);
+      updateLabels.current();
+    }, [ready, props.research.access]);
     // Colour transitions run independently from date filtering and camera movement.
     useEffect(() => {
       const m = mapRef.current;
@@ -839,7 +928,9 @@ export const MapView = forwardRef<MapHandle, Props>(
             ? footprint
             : props.theme === "use"
               ? usage
-              : height;
+              : props.theme === "access"
+                ? access
+                : height;
       if (props.context !== "none") {
         const c = CONTEXTS.find((c) => c.id === props.context)!;
         base = [
@@ -868,7 +959,11 @@ export const MapView = forwardRef<MapHandle, Props>(
           "fill-extrusion-color",
           props.context !== "none" || props.theme === "era"
             ? "#deddd5"
-            : "#b39476",
+            : props.theme === "use"
+              ? usage
+              : props.theme === "access"
+                ? access
+                : "#b39476",
         );
         if (color === base) layerMotion.current?.syncColours();
       };
@@ -894,7 +989,10 @@ export const MapView = forwardRef<MapHandle, Props>(
       layerMotion.current?.setLayers(props.layers);
       // Parts have no reliable parent/date association, so exclude them from isolated chronological views.
       layerMotion.current?.setPartsVisible(
-        props.context === "none" &&
+        props.research.use === "all" &&
+          props.research.access === "all" &&
+          props.research.yearFrom === 1190 &&
+          props.context === "none" &&
           props.period === null &&
           (props.timelineMode !== "buildings" ||
             (props.year === 2026 && props.showUnknown)),
@@ -910,6 +1008,7 @@ export const MapView = forwardRef<MapHandle, Props>(
       props.timelineMode,
       props.year === 2026,
       props.showUnknown,
+      props.research,
     ]);
     useEffect(() => {
       const m = mapRef.current;
@@ -923,11 +1022,16 @@ export const MapView = forwardRef<MapHandle, Props>(
         props.size,
         props.period,
         props.showUnknown,
+        props.research,
         props.timelineMode,
+        props.research,
       ]);
       if (container.current) {
         container.current.dataset.chronologyYear = String(props.year);
         container.current.dataset.context = props.context;
+        container.current.dataset.useFilter = props.research.use;
+        container.current.dataset.accessFilter = props.research.access;
+        container.current.dataset.yearFrom = String(props.research.yearFrom);
       }
       const syncSky = () => {
         if (!props.chronologyPlaying && skyTemporalKey.current !== key) {
@@ -945,6 +1049,15 @@ export const MapView = forwardRef<MapHandle, Props>(
         "all",
         ["==", ["get", "kind"], "building"],
       ];
+      if (props.research.use !== "all")
+        conditions.push(["==", ["get", "use_class"], props.research.use]);
+      if (props.research.access !== "all")
+        conditions.push(["==", ["get", "access_class"], props.research.access]);
+      conditions.push([
+        "any",
+        ["==", ["get", "recorded_year"], null],
+        [">=", ["get", "recorded_year"], props.research.yearFrom],
+      ]);
       if (props.size === "small")
         conditions.push(["<", ["get", "area_m2"], 100]);
       if (props.size === "medium")
@@ -1009,6 +1122,7 @@ export const MapView = forwardRef<MapHandle, Props>(
       props.timelineMode,
       props.period,
       props.showUnknown,
+      props.research,
       props.size,
       props.context,
     ]);

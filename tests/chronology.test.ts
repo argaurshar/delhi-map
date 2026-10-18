@@ -105,6 +105,17 @@ describe("Chronology and context evidence", () => {
     };
     const parse = (v: unknown) =>
       parseSavedView("#" + new URLSearchParams({ view: JSON.stringify(v) }));
+    const research = { use: "education", access: "private", yearFrom: 1800 };
+    expect(parse({ ...state, theme: "access", research })?.research).toEqual(
+      research,
+    );
+    for (const bad of [
+      { ...research, yearFrom: 2000 },
+      { ...research, yearFrom: null },
+      { ...research, use: "invented" },
+      { ...research, access: "government-owned" },
+    ])
+      expect(parse({ ...state, research: bad })).toBeNull();
     expect(parse(state)?.context).toBe("roofs");
     expect(parse(state)?.showUnknown).toBe(false);
     for (const invalid of [

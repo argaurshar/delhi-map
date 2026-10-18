@@ -23,7 +23,8 @@
     "rail": 1093,
     "station": 94,
     "tree": 2078,
-    "place": 7225
+    "place": 7225,
+    "paved": 299
   },
   "geometry_repairs": 0,
   "skipped_incomplete_or_unsupported": 6,
@@ -32,13 +33,39 @@
     "OSM mapping coverage is incomplete and uneven.",
     "Unknown heights use a uniform 8 m visual extrusion, excluded from measured-height statistics.",
     "Buildings outside the pilot that intersect its edge may be retained in full; study-area calculations clip to the pilot extent.",
-    "Heritage points are a separate editorial layer, not verified footprint matches."
+    "Heritage points are a separate editorial layer, not verified footprint matches.",
+    "Names are read from the same OSM record; nearby place names are never assigned to unnamed buildings.",
+    "Access and ownership are distinct source tags; absent tags mean unknown, not public or private.",
+    "Mapped plazas, pedestrian areas, road areas and parking are supplemental polygons. Hard paving is confirmed only by an explicit surface tag; other areas retain unknown or soft surface status."
   ],
   "building_attributes": {
-    "name": 1238,
+    "name": 1239,
     "height_m": 3562,
     "start_date": 16,
     "levels": 3475
+  },
+  "building_tag_coverage": {
+    "access": 29,
+    "ownership": 0,
+    "owner": 1,
+    "surface": 0,
+    "official_name": 6,
+    "name": 1235,
+    "name:en": 35,
+    "name:hi": 166
+  },
+  "mapped_area_attributes": {
+    "roles": {
+      "parking": 253,
+      "square": 1,
+      "road_area": 18,
+      "pedestrian_area": 27
+    },
+    "surface_status": {
+      "hard": 47,
+      "soft": 3,
+      "unknown": 249
+    }
   },
   "upstream_file": "https://download.geofabrik.de/asia/india/northern-zone-261015.osm.pbf",
   "upstream_sha256": "1051ae56eb0126a808c9363b8b211f12bd9333517825bb0d6b3262149d670fdc"

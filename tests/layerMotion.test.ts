@@ -96,6 +96,7 @@ describe("Staggered layer drop", () => {
           "buildings",
           "buildings-flat",
           "building-parts",
+          "paved",
           "green",
           "water",
           "trees",

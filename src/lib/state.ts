@@ -1,3 +1,4 @@
+import { USE_CATEGORIES, ACCESS_CATEGORIES } from "./urban";
 import { CONTEXTS, PERIODS } from "./chronology";
 import kinks from "@turf/kinks";
 import booleanValid from "@turf/boolean-valid";
@@ -62,7 +63,7 @@ export function parseSavedView(hash: string): SavedView | null {
     )
       return null;
     if (
-      !["footprint", "use", "height", "era"].includes(s.theme) ||
+      !["footprint", "use", "height", "era", "access"].includes(s.theme) ||
       !["all", "small", "medium", "large"].includes(s.size) ||
       !["explore", "analyse", "compare"].includes(s.mode)
     )
@@ -94,6 +95,18 @@ export function parseSavedView(hash: string): SavedView | null {
     )
       return null;
     if (s.showUnknown !== undefined && typeof s.showUnknown !== "boolean")
+      return null;
+    if (
+      s.research !== undefined &&
+      (!s.research ||
+        !["all", ...USE_CATEGORIES.map((c) => c.id)].includes(s.research.use) ||
+        !["all", ...ACCESS_CATEGORIES.map((c) => c.id)].includes(
+          s.research.access,
+        ) ||
+        !Number.isInteger(s.research.yearFrom) ||
+        s.research.yearFrom < 1190 ||
+        s.research.yearFrom > s.year)
+    )
       return null;
     if (s.area) s.area = validateArea(s.area);
     if (

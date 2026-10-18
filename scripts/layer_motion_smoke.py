@@ -8,7 +8,10 @@ def ready(page):
  page.locator('.map-loading').wait_for(state='detached',timeout=120000)
  page.wait_for_function('document.querySelector(".map-canvas").dataset.settled==="true"',timeout=90000)
 def progress(page,key,value):
- page.wait_for_function('([key,value])=>JSON.parse(document.querySelector(".map-canvas").dataset.layerProgress)[key]===value',arg=[key,value],timeout=10000)
+ # Software WebGL renders the overview at ~2 fps here. LayerMotion deliberately
+ # caps its timestep so the falling frames remain visible; measured replay took
+ # 11.1 seconds. Wait for completion without dropping intermediate/final checks.
+ page.wait_for_function('([key,value])=>JSON.parse(document.querySelector(".map-canvas").dataset.layerProgress)[key]===value',arg=[key,value],timeout=30000)
 def intermediate(page,key):
  page.wait_for_function('(key)=>{const v=JSON.parse(document.querySelector(".map-canvas").dataset.layerProgress)[key];return v>0.15&&v<0.85}',arg=key,timeout=5000)
 with sync_playwright() as p:
@@ -46,6 +49,7 @@ with sync_playwright() as p:
  assert page.locator('.heritage-marker[data-motion="falling"]').count()>0
  page.wait_for_function('[...document.querySelectorAll(".heritage-marker")].every(e=>e.dataset.motion==="idle"&&getComputedStyle(e).visibility==="visible")')
  for name,key,initial in [('Landscape & water','landscape',1),('Transit & streets','transit',0),('Street network','streets',1)]:
+  print("Checking toggle",key,flush=True)
   button=page.get_by_role('switch',name=name,exact=False)
   button.click();intermediate(page,key);progress(page,key,1-initial)
   button.click();progress(page,key,initial)

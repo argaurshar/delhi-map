@@ -10,6 +10,12 @@ import {
   buildingDate,
 } from "../lib/buildings";
 import { HERITAGE, formatNumber as fmt } from "../lib/data";
+import {
+  accessDefinition,
+  featureAddress,
+  featureName,
+  useDefinition,
+} from "../lib/urban";
 import type { CityFeature } from "../lib/types";
 
 interface Reference {
@@ -103,35 +109,69 @@ export function BuildingProfile({
         .slice(0, 3),
     [feature],
   );
-  const address = [
-    tags["addr:housenumber"],
-    tags["addr:street"],
-    tags["addr:suburb"],
-    tags["addr:city"],
-    tags["addr:postcode"],
+  const address = featureAddress(feature);
+  const name = featureName(feature);
+  const isBuilding = ["building", "buildingpart", "building_part"].includes(
+    p.kind,
+  );
+  const access = accessDefinition(feature);
+  const use = useDefinition(feature);
+  const useTags = [
+    "building:use",
+    "amenity",
+    "shop",
+    "office",
+    "tourism",
+    "building",
   ]
-    .filter(Boolean)
-    .join(", ");
+    .filter((key) => tags[key])
+    .map((key) => `${key}=${tags[key]}`)
+    .join(" · ");
+  const present = (value?: string | null) => value?.trim() || "Not recorded";
   const details = [
-    ["OSM start date", p.start_date ?? "Not recorded"],
-    ["Timeline date basis", date?.basis ?? "No usable date"],
+    ["Recorded name", name ?? "Name not recorded"],
     ["Mapped address", address || "Not recorded"],
-    ["Storeys", p.levels ?? "Not recorded"],
-    ["Building material", tags["building:material"] ?? "Not recorded"],
-    ["Roof form", tags["roof:shape"] ?? "Not recorded"],
-    [
-      "Architect",
-      tags.architect ?? tags["building:architect"] ?? "Not recorded",
-    ],
+    ...(isBuilding
+      ? [
+          ["Use category", use.label],
+          [
+            "Recorded use tags",
+            useTags || present(p.use === "yes" ? null : p.use),
+          ],
+          ["OSM start date", present(p.start_date)],
+          ["Timeline date basis", date?.basis ?? "No usable date"],
+          ["Storeys", present(p.levels)],
+          ["Building material", present(tags["building:material"])],
+          ["Roof form", present(tags["roof:shape"])],
+          ["Architect", present(tags.architect ?? tags["building:architect"])],
+        ]
+      : [
+          ["Mapped feature", p.kind.replaceAll("_", " ")],
+          ["Land use", present(tags.landuse)],
+          ["Leisure use", present(tags.leisure)],
+          ["Natural cover", present(tags.natural)],
+          ["Road classification", present(tags.highway ?? p.road_type)],
+        ]),
+    ["Access category", access.label],
+    ["Recorded access", present(tags.access)],
+    ["Conditional access", present(tags["access:conditional"])],
+    ["Ownership type", present(tags.ownership)],
+    ["Recorded owner", present(tags.owner)],
+    ["Operator", present(tags.operator)],
+    ["Opening hours", present(tags.opening_hours)],
+    ["Surface", present(tags.surface)],
+    ["Wheelchair access", present(tags.wheelchair)],
     [
       "Heritage designation",
       tags.heritage
         ? `${tags.heritage} · ${tags["heritage:operator"] ?? "OSM tag, verify designation"}`
         : "Not recorded",
     ],
-    ["Wheelchair access", tags.wheelchair ?? "Not recorded"],
+    ["Source record", p.id],
+    ["Map snapshot", present(p.snapshot)],
   ];
-  const website = safeExternalUrl(tags.website);
+  const website = safeExternalUrl(tags.website ?? tags["contact:website"]);
+  const mapSource = safeExternalUrl(p.source_url);
   return (
     <section className="building-profile">
       {evidence && (
@@ -174,8 +214,16 @@ export function BuildingProfile({
           </small>
         </button>
       )}
-      <h3>Building dossier</h3>
-      {tags["name:hi"] && <p lang="hi">{tags["name:hi"]}</p>}
+      <h3>{isBuilding ? "Building dossier" : "Ground & space dossier"}</h3>
+      {!name && (
+        <p className="micro-note">
+          This map feature has no recorded name. Its map ID identifies the exact
+          outline; nearby landmarks and an operator are not used as its name.
+        </p>
+      )}
+      {tags["name:hi"] && tags["name:hi"] !== name && (
+        <p lang="hi">{tags["name:hi"]}</p>
+      )}
       <dl className="facts">
         {details.map(([label, value]) => (
           <div key={label}>
@@ -202,6 +250,21 @@ export function BuildingProfile({
         require a survey or documentary source; no owner, structural condition
         or legal status is inferred.
       </p>
+      <p className="micro-note">
+        Access describes the recorded permission to enter, not ownership. Public
+        or government use alone does not establish public access. Map tags can
+        be incomplete or out of date; check access and operating hours locally.
+      </p>
+      {mapSource && (
+        <a
+          className="source-link"
+          href={mapSource}
+          target="_blank"
+          rel="noreferrer"
+        >
+          Inspect this map record <ExternalLink size={13} />
+        </a>
+      )}
       {website && (
         <a
           className="source-link"
@@ -228,7 +291,7 @@ export function BuildingProfile({
       <h3>Nearby context</h3>
       <p className="micro-note">
         Straight-line distances to curated sites. These are nearby places, not
-        identities or dates assigned to this building.
+        identities or dates assigned to this feature.
       </p>
       <div className="nearby-list">
         {nearby.map(({ h, distance }) => (

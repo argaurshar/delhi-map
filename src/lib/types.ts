@@ -8,7 +8,7 @@ import type {
   MultiPolygon,
 } from "geojson";
 export type Mode = "explore" | "analyse" | "compare";
-export type Theme = "footprint" | "use" | "height" | "era";
+export type Theme = "footprint" | "use" | "height" | "era" | "access";
 export type HeritageLens = "all" | "mughal" | "sacred" | "civic" | "water";
 export type SizeFilter = "all" | "small" | "medium" | "large";
 export type Layers = {
@@ -36,6 +36,9 @@ export interface Properties {
   selected_area_m2?: number;
   center?: [number, number];
   tags?: Record<string, string>;
+  surface_status?: "hard" | "soft" | "unknown";
+  area_role?: string;
+  name_source?: string;
   min_height_m?: number;
   timeline_date?: ReturnType<typeof buildingDate>;
   reviewed_building_evidence?: BuildingEvidence | null;
@@ -109,6 +112,7 @@ export interface SavedView {
   context?: ContextId;
   period?: PeriodId | null;
   showUnknown?: boolean;
+  research?: import("./urban").ResearchFilters;
   mode: Mode;
   area: StudyArea | null;
   areaName: string;
