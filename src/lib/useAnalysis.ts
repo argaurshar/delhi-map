@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type {
   Analysis,
   CityData,
@@ -6,50 +6,87 @@ import type {
   StudyArea,
   Overview,
 } from "./types";
+import type { FilterSelection } from "./selection";
 import { overviewResult } from "./overview";
+
 export function useAnalysis(
   data: CityData | null,
   area: StudyArea,
   size: SizeFilter,
   enabled = true,
   overview: Overview | null = null,
+  selection: FilterSelection | null = null,
 ) {
-  const [result, setResult] = useState<Analysis | null>(null);
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState("");
+  const request = useMemo(
+    () => ({ data, area, size, enabled, overview, selection }),
+    [data, area, size, enabled, overview, selection],
+  );
+  const [state, setState] = useState<{
+    request: typeof request | null;
+    result: Analysis | null;
+    busy: boolean;
+    error: string;
+  }>({ request: null, result: null, busy: false, error: "" });
   useEffect(() => {
     if (!data || !enabled) {
-      setResult(null);
-      setBusy(false);
+      setState({ request, result: null, busy: false, error: "" });
       return;
     }
-    setBusy(true);
-    setResult(null);
-    setError("");
-    if (overview) {
+    setState({ request, result: null, busy: true, error: "" });
+    // Only an unfiltered study can use overview statistics directly. A filtered
+    // request always verifies the selected IDs in its worker, even at defaults.
+    if (overview && !selection) {
       try {
-        setResult(overviewResult(data, overview, size));
+        setState({
+          request,
+          result: overviewResult(data, overview, size),
+          busy: false,
+          error: "",
+        });
       } catch (e) {
-        setError(e instanceof Error ? e.message : "Overview unavailable");
+        setState({
+          request,
+          result: null,
+          busy: false,
+          error: e instanceof Error ? e.message : "Overview unavailable",
+        });
       }
-      setBusy(false);
       return;
     }
-    const worker = new Worker(
-      new URL("./analysis.worker.ts", import.meta.url),
-      { type: "module" },
-    );
-    worker.onmessage = (event) => {
-      if (event.data.error) setError(event.data.error);
-      else setResult(event.data.result);
-      setBusy(false);
+    let active = true;
+    let worker: Worker | undefined;
+    const timer = window.setTimeout(() => {
+      worker = new Worker(new URL("./analysis.worker.ts", import.meta.url), {
+        type: "module",
+      });
+      worker.onmessage = (event) => {
+        if (!active) return;
+        setState({
+          request,
+          result: event.data.error ? null : event.data.result,
+          busy: false,
+          error: event.data.error ?? "",
+        });
+      };
+      worker.onerror = () => {
+        if (active)
+          setState({
+            request,
+            result: null,
+            busy: false,
+            error: "Analysis could not complete. Try a smaller study boundary.",
+          });
+      };
+      worker.postMessage({ id: 1, data, area, size, selection, overview });
+    }, 160);
+    return () => {
+      active = false;
+      window.clearTimeout(timer);
+      worker?.terminate();
     };
-    worker.onerror = () => {
-      setError("Analysis could not complete. Try a smaller study boundary.");
-      setBusy(false);
-    };
-    worker.postMessage({ id: 1, data, area, size });
-    return () => worker.terminate();
-  }, [data, area, size, enabled, overview]);
-  return { result, busy, error };
+  }, [request, data, area, size, enabled, overview, selection]);
+  // Do not expose stale records during the render before effect cleanup runs.
+  if (state.request !== request)
+    return { result: null, busy: Boolean(data && enabled), error: "" };
+  return { result: state.result, busy: state.busy, error: state.error };
 }

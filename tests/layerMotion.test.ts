@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { createExpression } from "@maplibre/maplibre-gl-style-spec";
 import type { Map as LibreMap } from "maplibre-gl";
 import {
+  COHORTS,
   DROP_DURATION,
   fallOffset,
   IMPACT,
@@ -86,6 +87,8 @@ describe("Staggered layer drop", () => {
       visibility = vi.fn();
     const map = {
       getCanvas: () => ({ clientHeight: 900 }),
+      getPixelRatio: () => 1,
+      setPixelRatio: vi.fn(),
       addSource: vi.fn(),
       addLayer: vi.fn(),
       setFilter: vi.fn(),
@@ -114,10 +117,24 @@ describe("Staggered layer drop", () => {
     const motion = new LayerMotion(
       map,
       DEFAULT_LAYERS,
-      { type: "FeatureCollection", features: [] },
       () => instant,
       () => {},
     );
+    expect(map.addSource).not.toHaveBeenCalled();
+    expect(map.addLayer).toHaveBeenCalledTimes(10 * COHORTS);
+    expect(
+      vi
+        .mocked(map.addLayer)
+        .mock.calls.every(
+          ([layer]) => "source" in layer && layer.source === "city",
+        ),
+    ).toBe(true);
+    const initialPaintCalls = paint.mock.calls.length;
+    const initialVisibilityCalls = visibility.mock.calls.length;
+    motion.setPartsVisible(true);
+    motion.setPartsVisible(true);
+    expect(paint.mock.calls.length).toBe(initialPaintCalls);
+    expect(visibility.mock.calls.length).toBe(initialVisibilityCalls);
     paint.mockClear();
     motion.setLayers({ ...DEFAULT_LAYERS, buildings: false });
     tick(350);
@@ -159,6 +176,7 @@ describe("Staggered layer drop", () => {
     motion.setLayers(DEFAULT_LAYERS);
     expect(translation()).toBeLessThan(-900);
     frame(5000);
+    expect(map.setPixelRatio).toHaveBeenLastCalledWith(0.7);
     expect(translation()).toBeLessThan(-900);
     tick(5300);
     expect(translation()).toBeGreaterThan(-900);
@@ -166,6 +184,7 @@ describe("Staggered layer drop", () => {
     motion.finish();
     expect(translation()).toBeCloseTo(0);
     expect(frames.size).toBe(0);
+    expect(map.setPixelRatio).toHaveBeenLastCalledWith(1);
     motion.destroy();
   });
 });

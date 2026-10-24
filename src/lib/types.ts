@@ -113,6 +113,7 @@ export interface SavedView {
   period?: PeriodId | null;
   showUnknown?: boolean;
   research?: import("./urban").ResearchFilters;
+  analyseFiltered?: boolean;
   mode: Mode;
   area: StudyArea | null;
   areaName: string;

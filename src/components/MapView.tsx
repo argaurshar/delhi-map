@@ -24,13 +24,13 @@ import type {
 } from "../lib/types";
 import {
   CONTEXTS,
-  PERIODS,
   contextCategory,
   inPeriod,
   type ContextId,
   type PeriodId,
   type TimelineMode,
 } from "../lib/chronology";
+import { matchesSelection, selectionExpression } from "../lib/selection";
 import { buildingYear } from "../lib/buildings";
 import {
   USE_CATEGORIES,
@@ -41,7 +41,7 @@ import {
   matchesResearch,
   type ResearchFilters,
 } from "../lib/urban";
-import { HERITAGE, PILOT, matchesSize } from "../lib/data";
+import { HERITAGE, PILOT } from "../lib/data";
 import {
   LayerMotion,
   MarkerDrop,
@@ -59,6 +59,7 @@ export interface MapHandle {
   flyTo: (center: [number, number], zoom?: number) => void;
   camera: () => SavedView["camera"];
   canvas: () => HTMLCanvasElement | undefined;
+  prepareCapture: () => Promise<HTMLCanvasElement | undefined>;
   project: (coords: [number, number]) => { x: number; y: number } | undefined;
 }
 interface Props {
@@ -190,6 +191,70 @@ export const MapView = forwardRef<MapHandle, Props>(
         orbitFrame.current = 0;
       },
       stopMotion,
+      prepareCapture() {
+        const m = mapRef.current;
+        if (!m || !m.getLayer("buildings")) return Promise.resolve(undefined);
+        return new Promise<HTMLCanvasElement>((resolve, reject) => {
+          let rendered = false;
+          const onRender = () => {
+            rendered = true;
+          };
+          const cleanup = () => {
+            window.clearTimeout(timer);
+            m.off("render", onRender);
+            m.off("idle", onIdle);
+            m.off("remove", onRemove);
+          };
+          const onIdle = () => {
+            if (!rendered) return;
+            cleanup();
+            resolve(m.getCanvas());
+          };
+          const onRemove = () => {
+            cleanup();
+            reject(new Error("The map closed before capture completed."));
+          };
+          const timer = window.setTimeout(() => {
+            cleanup();
+            reject(
+              new Error(
+                "The map did not settle for capture. Try again after loading completes.",
+              ),
+            );
+          }, 30000);
+          m.on("render", onRender);
+          m.on("idle", onIdle);
+          m.on("remove", onRemove);
+          try {
+            stopMotion();
+            layerMotion.current?.finish();
+            markerMotion.current?.finish();
+            cancelAnimationFrame(dateFrame.current);
+            cancelAnimationFrame(colourFrame.current);
+            dated.current.forEach((f) =>
+              m.setFeatureState(
+                { source: "city", id: f.id },
+                { appearance: 1 },
+              ),
+            );
+            const color: ExpressionSpecification = [
+              "case",
+              ["boolean", ["feature-state", "selected"], false],
+              "#e5a83e",
+              ["boolean", ["feature-state", "hover"], false],
+              "#394e48",
+              colourTarget.current,
+            ];
+            m.setPaintProperty("buildings", "fill-extrusion-color", color);
+            m.setPaintProperty("buildings-flat", "fill-color", color);
+            layerMotion.current?.syncColours();
+            m.triggerRepaint();
+          } catch (error) {
+            cleanup();
+            reject(error);
+          }
+        });
+      },
       reveal,
       cinematic(center, zoom = 16.5) {
         mapRef.current?.flyTo({
@@ -664,69 +729,109 @@ export const MapView = forwardRef<MapHandle, Props>(
           "bottom-left",
         );
         const contextLabels: maplibregl.Marker[] = [];
+        // Immutable name candidates are prepared once, rather than scanning the
+        // entire city and reparsing names after each camera movement.
+        const named = data.features.flatMap((feature) => {
+          const name = featureName(feature),
+            p = feature.properties;
+          return name &&
+            p.center &&
+            ["road", "place", "building"].includes(p.kind)
+            ? [{ feature, name, center: p.center }]
+            : [];
+        });
         let labelTime = 0;
         const labels = (force = false) => {
-          if (!force && performance.now() - labelTime < 1200) return;
+          if (!force && performance.now() - labelTime < 300) return;
           labelTime = performance.now();
           contextLabels.forEach((label) => label.remove());
           contextLabels.length = 0;
           if (m.getZoom() < 15.5) return;
-          const names = new Set<string>();
-          const candidates = data.features.filter(
-            (f) =>
-              featureName(f) &&
-              f.properties.center &&
-              m.getBounds().contains(f.properties.center),
-          );
+          const view = latest.current,
+            bounds = m.getBounds(),
+            canvas = m.getCanvas();
+          const w = canvas.clientWidth,
+            h = canvas.clientHeight;
+          const candidates = named
+            .filter(({ feature, center }) => {
+              const p = feature.properties;
+              if (
+                !bounds.contains(center) ||
+                !matchesResearch(feature, view.research)
+              )
+                return false;
+              if (p.kind === "road" && !view.layers.streets) return false;
+              return (
+                p.kind !== "building" ||
+                (view.layers.buildings && matchesSelection(feature, view))
+              );
+            })
+            .map((record) => ({ ...record, pixel: m.project(record.center) }));
           candidates.sort(
             (a, b) =>
-              Number(b.properties.kind === "building") -
-              Number(a.properties.kind === "building"),
+              Number(b.feature.properties.id === view.selectedId) -
+                Number(a.feature.properties.id === view.selectedId) ||
+              Number(b.feature.properties.kind === "building") -
+                Number(a.feature.properties.kind === "building") ||
+              (a.pixel.x - w / 2) ** 2 +
+                (a.pixel.y - h / 2) ** 2 -
+                ((b.pixel.x - w / 2) ** 2 + (b.pixel.y - h / 2) ** 2),
           );
-          for (const feature of candidates) {
-            const p = feature.properties;
+          const names = new Set<string>();
+          const occupied: {
+            left: number;
+            right: number;
+            top: number;
+            bottom: number;
+          }[] = [];
+          for (const { feature, name, center, pixel } of candidates) {
             if (
-              !featureName(feature) ||
-              !matchesResearch(feature, latest.current.research) ||
-              !p.center ||
-              names.has(p.name) ||
-              !["road", "place", "building"].includes(p.kind) ||
-              !m.getBounds().contains(p.center)
+              names.has(name) ||
+              pixel.x < 12 ||
+              pixel.y < 12 ||
+              pixel.x > w - 12 ||
+              pixel.y > h - 12
             )
               continue;
-            if (p.kind === "road" && !latest.current.layers.streets) continue;
-            if (p.kind === "building") {
-              const view = latest.current,
-                y = buildingYear(feature);
-              if (
-                !view.layers.buildings ||
-                !matchesSize(p, view.size) ||
-                !inPeriod(y, view.period)
-              )
-                continue;
-              if (
-                view.timelineMode === "buildings" &&
-                ((y !== null && y > view.year) ||
-                  (y === null && !view.showUnknown))
-              )
-                continue;
-            }
-            names.add(p.name);
             const el = document.createElement("button");
             el.type = "button";
             el.className = "context-map-label";
-            el.textContent = featureName(feature);
-            el.title = `${p.id} · exact mapped record`;
+            el.textContent = name;
+            el.title = `${feature.properties.id} · exact mapped record`;
             el.addEventListener("click", (e) => {
+              if (latest.current.drawMode) return;
               e.stopPropagation();
               latest.current.onFeature(feature);
             });
-            contextLabels.push(
-              new maplibregl.Marker({ element: el })
-                .setLngLat(p.center)
-                .addTo(m),
-            );
-            if (contextLabels.length >= 24) break;
+            const marker = new maplibregl.Marker({ element: el })
+              .setLngLat(center)
+              .addTo(m);
+            // Measure the rendered label instead of guessing based on Latin text
+            // length; this also handles Hindi and multiline names.
+            const width = el.offsetWidth,
+              height = el.offsetHeight;
+            const rect = {
+              left: pixel.x - width / 2 - 5,
+              right: pixel.x + width / 2 + 5,
+              top: pixel.y - height / 2 - 4,
+              bottom: pixel.y + height / 2 + 4,
+            };
+            if (
+              occupied.some(
+                (other) =>
+                  rect.left < other.right &&
+                  rect.right > other.left &&
+                  rect.top < other.bottom &&
+                  rect.bottom > other.top,
+              )
+            ) {
+              marker.remove();
+              continue;
+            }
+            names.add(name);
+            occupied.push(rect);
+            contextLabels.push(marker);
+            if (contextLabels.length >= 32) break;
           }
         };
         updateLabels.current = () => labels(true);
@@ -735,7 +840,6 @@ export const MapView = forwardRef<MapHandle, Props>(
         layerMotion.current = new LayerMotion(
           m,
           latest.current.layers,
-          renderData,
           () => reduced() || document.hidden,
           (values, moving) => {
             if (container.current) {
@@ -1024,7 +1128,6 @@ export const MapView = forwardRef<MapHandle, Props>(
         props.showUnknown,
         props.research,
         props.timelineMode,
-        props.research,
       ]);
       if (container.current) {
         container.current.dataset.chronologyYear = String(props.year);
@@ -1045,49 +1148,7 @@ export const MapView = forwardRef<MapHandle, Props>(
       }
       temporalKey.current = key;
       if (container.current) container.current.dataset.settled = "false";
-      const conditions: ["all", ...ExpressionSpecification[]] = [
-        "all",
-        ["==", ["get", "kind"], "building"],
-      ];
-      if (props.research.use !== "all")
-        conditions.push(["==", ["get", "use_class"], props.research.use]);
-      if (props.research.access !== "all")
-        conditions.push(["==", ["get", "access_class"], props.research.access]);
-      conditions.push([
-        "any",
-        ["==", ["get", "recorded_year"], null],
-        [">=", ["get", "recorded_year"], props.research.yearFrom],
-      ]);
-      if (props.size === "small")
-        conditions.push(["<", ["get", "area_m2"], 100]);
-      if (props.size === "medium")
-        conditions.push(
-          [">=", ["get", "area_m2"], 100],
-          ["<", ["get", "area_m2"], 500],
-        );
-      if (props.size === "large")
-        conditions.push([">=", ["get", "area_m2"], 500]);
-      if (props.timelineMode === "buildings") {
-        const dates: ["any", ...ExpressionSpecification[]] = [
-          "any",
-          [
-            "all",
-            ["!=", ["get", "recorded_year"], null],
-            ["<=", ["get", "recorded_year"], cutoff],
-          ],
-        ];
-        if (props.showUnknown && !props.period)
-          dates.push(["==", ["get", "recorded_year"], null]);
-        conditions.push(dates);
-      }
-      if (props.period) {
-        const period = PERIODS.find((p) => p.id === props.period)!;
-        conditions.push(
-          ["!=", ["get", "recorded_year"], null],
-          [">=", ["get", "recorded_year"], period.start],
-          ["<=", ["get", "recorded_year"], period.end],
-        );
-      }
+      const conditions = selectionExpression(props);
       const newly = eligible.filter((f) => !shownDates.current.has(f.id));
       cancelAnimationFrame(dateFrame.current);
       // Finish interrupted reveals before beginning another cohort.
@@ -1137,16 +1198,6 @@ export const MapView = forwardRef<MapHandle, Props>(
       if (props.selectedId)
         m.setFeatureState(
           { source: "city", id: props.selectedId },
-          { selected: true },
-        );
-      if (previousSelection.current)
-        m.setFeatureState(
-          { source: "sky-city", id: previousSelection.current },
-          { selected: false },
-        );
-      if (props.selectedId)
-        m.setFeatureState(
-          { source: "sky-city", id: props.selectedId },
           { selected: true },
         );
       previousSelection.current = props.selectedId;

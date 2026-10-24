@@ -3080,3 +3080,20 @@ td a {
   outline: 2px solid #276cff;
   outline-offset: 2px;
 }
+
+.analysis-scope {
+  margin-top: 16px;
+  padding: 12px;
+  border: 1px solid #b6c5b5;
+  border-radius: 6px;
+  background: #eff4e9;
+}
+.analysis-scope .unknown-checkbox {
+  align-items: flex-start;
+  font-weight: 600;
+}
+.analysis-scope-readout {
+  border-left: 3px solid #748d73;
+  padding-left: 8px;
+  overflow-wrap: anywhere;
+}

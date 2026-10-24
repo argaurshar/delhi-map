@@ -80,7 +80,8 @@ with sync_playwright() as p:
     page.screenshot(path=str(OUT/'03-analysis.png'))
     invalid={'type':'Polygon','coordinates':[[[0,0],[1,0],[1,1],[0,0]]]}
     page.get_by_label('Import study boundary file').set_input_files({'name':'outside.geojson','mimeType':'application/geo+json','buffer':json.dumps(invalid).encode()})
-    assert page.get_by_role('status').filter(has_text='inside the Central Delhi pilot').is_visible()
+    # Imported files are read asynchronously; wait for the exact validation message.
+    page.get_by_role('status').filter(has_text='inside the Central Delhi pilot').wait_for(state='visible',timeout=10000)
     valid={'type':'Polygon','coordinates':[[[77.21,28.63],[77.22,28.63],[77.22,28.64],[77.21,28.64],[77.21,28.63]]]}
     page.get_by_label('Import study boundary file').set_input_files({'name':'research.geojson','mimeType':'application/geo+json','buffer':json.dumps(valid).encode()});ready(page)
     assert 'research' in page.locator('.right-panel').inner_text()

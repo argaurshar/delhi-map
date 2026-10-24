@@ -116,6 +116,10 @@ describe("Chronology and context evidence", () => {
       { ...research, access: "government-owned" },
     ])
       expect(parse({ ...state, research: bad })).toBeNull();
+    expect(parse({ ...state, analyseFiltered: true })?.analyseFiltered).toBe(
+      true,
+    );
+    expect(parse({ ...state, analyseFiltered: "yes" })).toBeNull();
     expect(parse(state)?.context).toBe("roofs");
     expect(parse(state)?.showUnknown).toBe(false);
     for (const invalid of [

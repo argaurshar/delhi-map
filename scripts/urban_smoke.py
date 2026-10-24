@@ -62,7 +62,7 @@ with sync_playwright() as p:
  assert 'relation/3926057' in page.locator('.right-panel').inner_text()
  page.screenshot(path=str(OUT/'02-exact-name.png'));close(page)
  page.get_by_role('button',name='Export',exact=True).click()
- assert 'Use, access' in page.get_by_role('dialog').inner_text()
+ assert 'Analysis scope:' in page.get_by_role('dialog').inner_text()
  with page.expect_download() as d:page.get_by_role('dialog').get_by_role('button',name='Map image').click()
  d.value.save_as(str(OUT/'urban-map.png'));assert (OUT/'urban-map.png').stat().st_size>10000
  page.get_by_role('button',name='Close dialog',exact=True).click()

@@ -19,14 +19,21 @@ An interactive urban research map with animated exploration, sourced place profi
 - Map filters for use, recorded access and a built-year range, with explicit undated inclusion. Public access is separate from ownership; missing tags stay unknown. Filters and colours survive shared links and appear in PNG exports.
 - Bright green spaces, cyan water, amber roads and **299 mapped area polygons**. Only **47** have explicitly hard surfaces; three have soft surfaces and 249 have unrecorded/unclassified surfaces. Click a space for its recorded facts.
 - Exact source names, multilingual and address search, clickable name labels and an explicit “Name not recorded” state. **1,239** building footprints have recorded names. Nearby places never supply an unverified building name.
-- **17 reviewed building histories** match explicit footprint IDs, names and locations, distinguish individual structures from wider sites, and retain source links. Ranges, approximate dates and institutional milestones are kept separate from added exact dates. CSV and GeoJSON preserve the original OSM values alongside reviewed history and timeline-date provenance.
+- **18 reviewed building histories** match explicit footprint IDs, names and locations, distinguish individual structures from wider sites, and retain source links. Ranges, approximate dates and institutional milestones are kept separate from added exact dates. CSV and GeoJSON preserve the original OSM values alongside reviewed history and timeline-date provenance.
 - Building dossiers with available address, storeys, material, roof, access and other public OSM tags; calculated perimeter and coordinates; nearby context and source links.
 - Mapped building parts, streets, places, trees, landscape, water and transit. These are schematic extrusions, not detailed architectural meshes.
-- Draw/import a study polygon or create a radius, compare neighbourhood windows, inspect records, share a view and export PNG, CSV, GeoJSON or a Markdown research brief. Study calculations and data exports retain the study boundary and footprint-size filter; visual use/access/date/context filters are separate. CSV includes use/access categories alongside original access, ownership, surface and name-source fields. PNG exports reflect the displayed map and its current palette.
+- Draw/import a study polygon or create a radius, compare neighbourhood windows, inspect records, share a view and export PNG, CSV, GeoJSON or a Markdown research brief. Enable **Analyse this filtered selection** to apply use/access/date/period filters consistently to study statistics, comparison windows, record tables and CSV/GeoJSON/brief exports. With it disabled, research uses the study boundary and footprint-size filter. Context colours, camera position and layer visibility do not change eligibility. CSV includes use/access categories alongside original access, ownership, surface and name-source fields. PNG exports reflect the displayed map and its current palette.
 
 Only **3,562** building records have a height or storey tag and **16** have a construction-date tag, of which **15** can be parsed as a specific year (the remaining value is a century). Those original map dates remain contributor records. A separate reviewed evidence overlay adds four dates and corroborates four existing dates without changing the OSM snapshot. An unknown height uses a uniform **8 m visual extrusion** and is excluded from height statistics. Storey-derived heights use 3 m per storey. Names, heights and dates are not invented to fill gaps.
 
 See [reviewed building evidence](docs/BUILDING_EVIDENCE.md) for identity checks, date semantics and export fields.
+
+- A persistent-on-page **Research workbench** provides building density, height-evidence distributions, use mix, a four-building shortlist, researcher notes and sourced Markdown/CSV notebooks. Approximate centre-to-centre distances are clearly separate from walking routes or surveyed setbacks.
+- **Planning sources** links verified ASI/NMA law and bye-law pages, distinguishes drafts from Parliament-listed documents, and marks the unavailable DDA portal. It does not display invented statutory boundaries or imply parcel-specific legal advice.
+- **Mapped spaces** browses and exports 2,657 real polygon records, with independent role, surface and access filters and exact-ID selection.
+- Record evidence panels distinguish reviewed identity associations, contributor-recorded names, missing attributes, recorded heights, storey estimates and the 8 m display default.
+
+Read [the research workflow](docs/RESEARCH_WORKFLOW.md) for using filters, evidence, notebooks and planning sources together.
 
 ## Run and validate
 
@@ -57,6 +64,7 @@ ATLAS_TEST_URL=http://127.0.0.1:4175/delhi-map/ python scripts/browser_smoke.py
 ATLAS_TEST_URL=http://127.0.0.1:4175/delhi-map/ python scripts/experience_smoke.py
 ATLAS_TEST_URL=http://127.0.0.1:4175/delhi-map/ python scripts/animation_smoke.py
 ATLAS_TEST_URL=http://127.0.0.1:4175/delhi-map/ python scripts/urban_smoke.py
+ATLAS_TEST_URL=http://127.0.0.1:4175/delhi-map/ python scripts/research_smoke.py
 ```
 
 Set `CHROMIUM_PATH` and `ATLAS_TEST_OUTPUT` if necessary. The checks cover source loading, map interactions, study geometry, exports, reference profiles, tour behavior, actual orbit movement, reduced motion and mobile layouts. The animation check verifies that an actual rendered Lotus Temple footprint disappears before its recorded year and reappears at that year; it also checks hover pixels, period filters and chart reconciliation.
@@ -87,3 +95,5 @@ The app does not claim complete building ages, owner identities, legal planning 
 ## Reference investigation
 
 See [the Amsterdam reference audit](docs/REFERENCE_AUDIT.md) for observed interface features, REA evidence, animation mechanisms and Delhi data limitations. The corrected tool is [morluto/rea](https://github.com/morluto/rea); the published CLI used here is `rea-agents@6.5.0`. It is a development-only investigation tool, not an application dependency.
+
+See [identity evidence](docs/IDENTITY_EVIDENCE.md) and [planning source verification](docs/PLANNING_SOURCES.md) for the added record, exact source URLs and remaining data constraints. Whole-pilot filtered analysis partitions disconnected footprint unions without approximating coverage; superseded worker results are discarded.

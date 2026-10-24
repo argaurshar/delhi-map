@@ -44,7 +44,7 @@ with sync_playwright() as p:
     canvas_hover=page.locator('canvas').screenshot();assert canvas_before!=canvas_hover
     page.mouse.click(695,520)
     assert 'Lotus Temple' in page.locator('.right-panel').inner_text()
-    assert page.locator('.right-panel').evaluate('el=>getComputedStyle(el).animationName')=='inspector-enter'
+    assert page.locator('.inspector-content').evaluate('el=>getComputedStyle(el).animationName')=='inspector-enter'
     page.get_by_role('button',name='Close feature details',exact=True).click()
     page.mouse.move(600,400)
     # Four dated records through 1600, and 19 total at Today.

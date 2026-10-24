@@ -6,7 +6,13 @@ import {
 } from "./urban";
 import area from "@turf/area";
 import intersect from "@turf/intersect";
-import union from "@turf/union";
+import { unionArea } from "./unionArea";
+import {
+  matchesSelection,
+  selectionDescription,
+  type FilterSelection,
+} from "./selection";
+import { overviewResult } from "./overview";
 import booleanIntersects from "@turf/boolean-intersects";
 import bbox from "@turf/bbox";
 import { featureCollection } from "@turf/helpers";
@@ -20,11 +26,13 @@ import type {
   Properties,
   SizeFilter,
   StudyArea,
+  Overview,
 } from "./types";
 export function analyse(
   data: CityData,
   selectedArea: StudyArea,
   size: SizeFilter = "all",
+  selection: FilterSelection | null = null,
 ): Analysis {
   const clippedArea = intersect(featureCollection([selectedArea, PILOT]));
   const empty: Analysis = {
@@ -50,7 +58,8 @@ export function analyse(
   for (const feature of data.features) {
     if (
       feature.properties.kind !== "building" ||
-      !matchesSize(feature.properties, size)
+      !matchesSize(feature.properties, size) ||
+      (selection !== null && !matchesSelection(feature, selection))
     )
       continue;
     const polygon = feature as Feature<Polygon | MultiPolygon, Properties>;
@@ -80,9 +89,7 @@ export function analyse(
       if (p.height_method.startsWith("Estimated:")) estimatedHeightCount++;
     }
   }
-  const merged =
-    polygons.length > 1 ? union(featureCollection(polygons)) : polygons[0];
-  const footprintM2 = merged ? area(merged) : 0;
+  const footprintM2 = unionArea(polygons);
   const areaM2 = area(clippedArea);
   return {
     count: features.length,
@@ -100,6 +107,47 @@ export function analyse(
     clipped: { type: "FeatureCollection", features: polygons },
   };
 }
+/** Reuse verified clipping, but recompute all statistics for changed eligibility. */
+export function analyseOverviewSelection(
+  data: CityData,
+  overview: Overview,
+  size: SizeFilter,
+  selection: FilterSelection,
+): Analysis {
+  const full = overviewResult(data, overview, size);
+  const features = full.features.filter((f) => matchesSelection(f, selection));
+  // Exact equality of selected IDs permits use of the existing exact union.
+  if (features.length === full.features.length) return full;
+  const selected = new Set(features.map((f) => f.properties.id));
+  const polygons = full.clipped.features.filter((f) =>
+    selected.has(f.properties.id),
+  ) as Feature<Polygon | MultiPolygon, Properties>[];
+  const footprintM2 = unionArea(polygons);
+  const heights = features.filter((f) => f.properties.height_m !== null);
+  const bins = [0, 0, 0, 0];
+  for (const f of features) {
+    const a = f.properties.area_m2 ?? area(f);
+    bins[a < 100 ? 0 : a < 500 ? 1 : a < 2000 ? 2 : 3]++;
+  }
+  return {
+    ...full,
+    count: features.length,
+    footprintM2,
+    coverage: full.areaM2 ? (footprintM2 / full.areaM2) * 100 : 0,
+    knownHeightCount: heights.length,
+    estimatedHeightCount: heights.filter((f) =>
+      f.properties.height_method.startsWith("Estimated:"),
+    ).length,
+    unknownHeightCount: features.length - heights.length,
+    heightMean: heights.length
+      ? heights.reduce((sum, f) => sum + f.properties.height_m!, 0) /
+        heights.length
+      : null,
+    bins,
+    features,
+    clipped: { type: "FeatureCollection", features: polygons },
+  };
+}
 export function escapeCsv(value: unknown): string {
   let text = String(value ?? "");
   if (/^[\s]*[=+@-]/.test(text)) text = "'" + text;
@@ -109,6 +157,7 @@ export function toCsv(
   result: Analysis,
   dataset: string,
   studyName: string,
+  selection: FilterSelection | null = null,
 ): string {
   const keys = [
     "id",
@@ -143,6 +192,9 @@ export function toCsv(
     "owner",
     "surface",
     "name_source",
+    "analysis_scope",
+    "analysis_filters",
+    "analysis_description",
   ];
   const rows = result.features.map((f) => [
     f.properties.id,
@@ -179,6 +231,11 @@ export function toCsv(
     f.properties.tags?.owner,
     f.properties.tags?.surface,
     f.properties.name_source,
+    selection ? "filtered" : "study",
+    selection ? JSON.stringify(selection) : "",
+    selection
+      ? selectionDescription(selection)
+      : "Study boundary and footprint size; map use/access/date filters are not applied",
   ]);
   return [keys, ...rows]
     .map((row) => row.map(escapeCsv).join(","))

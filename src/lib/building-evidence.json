@@ -383,5 +383,29 @@
       "label": "Cremation site, 1948; not a building date",
       "source": 0
     }
+  },
+  {
+    "id": "relation/5507689",
+    "expectedName": "National Archives of India",
+    "center": [77.2176077, 28.6152861],
+    "relationship": "same building",
+    "summary": "The official headquarters address is National Archives of India, Janpath, New Delhi, matching this named map record and its recorded official website. The institution began as the Imperial Records Department in Calcutta in 1891; its official history says the department moved to the present New Delhi building in 1926. These are institutional and occupancy milestones, not a verified construction year for every part of the current mapped outline.",
+    "sources": [
+      {
+        "title": "National Archives of India · History",
+        "url": "https://nationalarchives.nic.in/index.php/en/about-NAI/history",
+        "checked": "2026-10-24"
+      },
+      {
+        "title": "National Archives of India · Headquarters address",
+        "url": "https://nationalarchives.nic.in/index.php/en/about-NAI/how-reach/headquarters",
+        "checked": "2026-10-24"
+      }
+    ],
+    "date": {
+      "year": null,
+      "label": "Records moved here in 1926; construction year not assigned",
+      "source": 0
+    }
   }
 ]

@@ -108,6 +108,11 @@ export function parseSavedView(hash: string): SavedView | null {
         s.research.yearFrom > s.year)
     )
       return null;
+    if (
+      s.analyseFiltered !== undefined &&
+      typeof s.analyseFiltered !== "boolean"
+    )
+      return null;
     if (s.area) s.area = validateArea(s.area);
     if (
       s.comparison &&

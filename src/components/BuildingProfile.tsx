@@ -16,6 +16,7 @@ import {
   featureName,
   useDefinition,
 } from "../lib/urban";
+import { recordEvidence, sourceEvidence } from "../lib/identity";
 import type { CityFeature } from "../lib/types";
 
 interface Reference {
@@ -94,6 +95,7 @@ export function BuildingProfile({
   feature: CityFeature;
   onHeritage: (id: string) => void;
 }) {
+  const record = recordEvidence(feature);
   const p = feature.properties;
   const tags = p.tags ?? {};
   const coords = centerOf(feature);
@@ -174,6 +176,61 @@ export function BuildingProfile({
   const mapSource = safeExternalUrl(p.source_url);
   return (
     <section className="building-profile">
+      <section className="identity-evidence" aria-label="Record evidence">
+        <h3>Identity & evidence</h3>
+        <strong>{record.identity.label}</strong>
+        <p className="micro-note">{record.identity.explanation}</p>
+        <dl className="facts">
+          <div>
+            <dt>Association scope</dt>
+            <dd>{record.identity.scope}</dd>
+          </div>
+          <div>
+            <dt>Name basis</dt>
+            <dd>{record.identity.nameSource}</dd>
+          </div>
+          <div>
+            <dt>Available fields</dt>
+            <dd>
+              {record.available} / {record.total}
+              {record.estimated ? ` · ${record.estimated} estimated` : ""}
+            </dd>
+          </div>
+          {isBuilding && (
+            <div>
+              <dt>Height evidence</dt>
+              <dd>{record.height.label}</dd>
+            </div>
+          )}
+        </dl>
+        {isBuilding && (
+          <p className="micro-note">{record.height.explanation}</p>
+        )}
+        <details className="tag-details">
+          <summary>Field coverage and missing information</summary>
+          <p className="micro-note">
+            Coverage counts available attributes, not accuracy. A recorded use
+            does not prove current occupancy; access does not establish
+            ownership.
+          </p>
+          <dl className="facts">
+            {record.fields.map((f) => (
+              <div key={f.id}>
+                <dt>{f.label}</dt>
+                <dd>
+                  {f.value}
+                  <small style={{ display: "block" }}>{f.state}</small>
+                </dd>
+              </div>
+            ))}
+          </dl>
+          {record.missing.length > 0 && (
+            <p className="micro-note">
+              Still missing: {record.missing.join(", ")}.
+            </p>
+          )}
+        </details>
+      </section>
       {evidence && (
         <section className="reviewed-evidence">
           <h3>Reviewed building history</h3>
@@ -193,7 +250,9 @@ export function BuildingProfile({
               >
                 {source.title} <ExternalLink size={13} />
               </a>
-              <p className="micro-note">Source checked {source.checked}</p>
+              <p className="micro-note">
+                {sourceEvidence(source).type} · {sourceEvidence(source).status}
+              </p>
             </div>
           ))}
         </section>

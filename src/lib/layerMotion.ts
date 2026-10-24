@@ -3,7 +3,6 @@ import type {
   Map as LibreMap,
   LayerSpecification,
 } from "maplibre-gl";
-import type { FeatureCollection } from "geojson";
 import type { Layers } from "./types";
 
 export const DROP_DURATION = 1000;
@@ -36,7 +35,8 @@ export function fallOffset(progress: number, distance: number): number {
   return distance * 0.025 * 4 * bounce * (1 - bounce);
 }
 
-export const COHORTS = 8;
+// Four stagger groups retain every feature while halving animated draw buckets.
+export const COHORTS = 4;
 // Fixed roof and base expressions. Uniform screen-space translation moves the
 // entire 3D mass without per-vertex edits or height changes.
 export function massingPaint(parts = false) {
@@ -77,6 +77,41 @@ const prefix = (id: string) =>
 export class LayerMotion {
   private frame = 0;
   private partsVisible = true;
+  private fullResolution: number | null = null;
+  private restoreResolution() {
+    if (this.fullResolution === null) return;
+    this.map.setPixelRatio(this.fullResolution);
+    this.fullResolution = null;
+  }
+  private adaptResolution(elapsed: number) {
+    if (elapsed < 140 || this.fullResolution !== null) return;
+    // The CSS viewport and geometry stay unchanged. Only a slow moving
+    // canvas uses fewer pixels; the settled map and exports regain full detail.
+    this.fullResolution = this.map.getPixelRatio();
+    this.map.setPixelRatio(Math.min(1, this.fullResolution * 0.7));
+  }
+  private painted = new Map<string, unknown>();
+  private visibility = new Map<string, string>();
+  private paintProperty(id: string, property: string, value: unknown) {
+    const key = `${id}:${property}`;
+    const previous = this.painted.get(key);
+    if (
+      previous === value ||
+      (Array.isArray(previous) &&
+        Array.isArray(value) &&
+        previous.length === value.length &&
+        previous.every((v, i) => v === value[i]))
+    )
+      return;
+    this.painted.set(key, value);
+    this.map.setPaintProperty(id, property, value);
+  }
+  private show(id: string, visible: boolean) {
+    const value = visible ? "visible" : "none";
+    if (this.visibility.get(id) === value) return;
+    this.visibility.set(id, value);
+    this.map.setLayoutProperty(id, "visibility", value);
+  }
   private state: Record<
     MovingLayer,
     {
@@ -93,20 +128,14 @@ export class LayerMotion {
   constructor(
     private map: LibreMap,
     layers: Layers,
-    data: FeatureCollection,
     private instant: () => boolean,
     private report: (
       values: Record<MovingLayer, number>,
       moving: boolean,
     ) => void,
   ) {
-    map.addSource("sky-city", {
-      type: "geojson",
-      data,
-      promoteId: "id",
-      tolerance: 0.3,
-      maxzoom: 17,
-    });
+    // Resting and moving layers share geometry and feature state. A second
+    // complete city source doubled JSON transfer, indexing and tile storage.
     const style = map.getStyle();
     for (const key of keys)
       for (const id of groups[key]) {
@@ -116,7 +145,7 @@ export class LayerMotion {
           const sky = {
             ...original,
             id: `sky-${c}-${id}`,
-            source: "sky-city",
+            source: "city",
             layout: { ...original.layout, visibility: "none" },
             paint: { ...original.paint },
             filter: [
@@ -262,8 +291,11 @@ export class LayerMotion {
   }
   destroy() {
     cancelAnimationFrame(this.frame);
+    this.restoreResolution();
   }
   private notify() {
+    if (!keys.some((k) => this.state[k].value !== this.state[k].target))
+      this.restoreResolution();
     this.report(
       Object.fromEntries(keys.map((k) => [k, this.state[k].value])) as Record<
         MovingLayer,
@@ -286,6 +318,7 @@ export class LayerMotion {
           if (s.value === s.target) return;
           // Keep a slow render from swallowing the entire fall. Normal frame
           // cadence still completes in one second; stalled devices retain motion.
+          this.adaptResolution(now - s.start);
           const step = Math.max(0, Math.min(64, now - s.start)) / DROP_DURATION;
           s.start = now;
           s.value =
@@ -333,13 +366,13 @@ export class LayerMotion {
     for (const id of groups[key]) {
       const allowed = id !== "building-parts" || this.partsVisible,
         type = prefix(id);
-      this.map.setPaintProperty(
+      this.paintProperty(
         id,
         `${type}-opacity`,
         !moving && p === 1 && allowed ? alpha(id) : 0,
       );
       if (type === "circle")
-        this.map.setPaintProperty(
+        this.paintProperty(
           id,
           "circle-stroke-opacity",
           !moving && p === 1 ? 1 : 0,
@@ -348,23 +381,19 @@ export class LayerMotion {
       for (let c = 0; c < COHORTS; c++) {
         // Do not spend a draw pass on cohorts still above the visible canvas.
         const inView = s.offsets[c] < this.map.getCanvas().clientHeight;
-        this.map.setLayoutProperty(
-          `sky-${c}-${id}`,
-          "visibility",
-          moving && allowed ? "visible" : "none",
-        );
-        this.map.setPaintProperty(
+        this.show(`sky-${c}-${id}`, moving && allowed);
+        this.paintProperty(
           `sky-${c}-${id}`,
           `${type}-opacity`,
           moving && allowed && inView ? alpha(id) : 0,
         );
         if (type === "circle")
-          this.map.setPaintProperty(
+          this.paintProperty(
             `sky-${c}-${id}`,
             "circle-stroke-opacity",
             moving && inView ? 1 : 0,
           );
-        this.map.setPaintProperty(`sky-${c}-${id}`, `${type}-translate`, [
+        this.paintProperty(`sky-${c}-${id}`, `${type}-translate`, [
           0,
           -s.offsets[c],
         ]);

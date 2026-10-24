@@ -81,6 +81,9 @@ import {
   formatNumber as fmt,
   matchesSize,
 } from "./lib/data";
+import { PlanningPanel } from "./components/PlanningPanel";
+import { ResearchTools } from "./components/ResearchTools";
+import { selectionDescription, type FilterSelection } from "./lib/selection";
 import { useAnalysis } from "./lib/useAnalysis";
 import { toCsv } from "./lib/analysis";
 import { download, parseSavedView, validateArea } from "./lib/state";
@@ -133,8 +136,8 @@ function Summary({
   if (busy)
     return (
       <div className="calculating">
-        <LoaderCircle size={17} className="spin" /> Calculating from the full
-        dataset…
+        <LoaderCircle size={17} className="spin" /> Calculating the selected
+        study…
       </div>
     );
   if (error)
@@ -250,6 +253,9 @@ export default function App() {
   const [radius, setRadius] = useState(500);
   const [mapReady, setMapReady] = useState(false);
   const [panelOpen, setPanelOpen] = useState(window.innerWidth >= 900);
+  const [analyseFiltered, setAnalyseFiltered] = useState(
+    initial?.analyseFiltered ?? false,
+  );
   const [exportBusy, setExportBusy] = useState(false);
   const [shareUrl, setShareUrl] = useState("");
   const [tableQuery, setTableQuery] = useState("");
@@ -262,12 +268,22 @@ export default function App() {
   const searchBox = useRef<HTMLDivElement>(null);
   const closeModal = useCallback(() => setModal(null), []);
   const study = area ?? PILOT;
+  const filterSelection = useMemo<FilterSelection>(
+    () => ({ research, size, year, timelineMode, period, showUnknown }),
+    [research, size, year, timelineMode, period, showUnknown],
+  );
+  const analysisSelection = analyseFiltered ? filterSelection : null;
+  const analysisDescription = analyseFiltered
+    ? selectionDescription(filterSelection)
+    : `All study buildings; footprint ${size}`;
+  const analysisEnabled = !analyseFiltered || !playing;
   const analysis = useAnalysis(
     data,
     study,
     size,
-    !!data && !!overview,
+    !!data && !!overview && analysisEnabled,
     area === null ? overview : null,
+    analysisSelection,
   );
   const comparisonA = AREAS.find((a) => a.id === compareIds[0])!;
   const comparisonB = AREAS.find((a) => a.id === compareIds[1])!;
@@ -275,13 +291,17 @@ export default function App() {
     data,
     comparisonA.area,
     size,
-    mode === "compare",
+    mode === "compare" && analysisEnabled,
+    compareIds[0] === "pilot" ? overview : null,
+    analysisSelection,
   );
   const compareB = useAnalysis(
     data,
     comparisonB.area,
     size,
-    mode === "compare",
+    mode === "compare" && analysisEnabled,
+    compareIds[1] === "pilot" ? overview : null,
+    analysisSelection,
   );
   const notify = useCallback((message: string) => setToast(message), []);
   useEffect(() => {
@@ -365,7 +385,10 @@ export default function App() {
     };
   }, []);
   useEffect(() => {
-    if (modal || drawMode) setPlaying(false);
+    if (modal || drawMode) {
+      setPlaying(false);
+      setMotionInterrupt((i) => i + 1);
+    }
   }, [modal, drawMode]);
   function changeResearch(
     next: ResearchFilters | ((r: ResearchFilters) => ResearchFilters),
@@ -515,6 +538,9 @@ export default function App() {
   const heritageSelection = selected && "story" in selected ? selected : null;
   const featureSelection =
     selected && "properties" in selected ? selected : null;
+  useEffect(() => {
+    document.querySelector(".right-panel")?.scrollTo({ top: 0 });
+  }, [selected]);
   function selectHeritage(id: string, fromTour = false) {
     setPlaying(false);
     if (fromTour) {
@@ -643,6 +669,7 @@ export default function App() {
       period,
       showUnknown,
       research,
+      analyseFiltered,
       mode,
       area,
       areaName,
@@ -670,9 +697,20 @@ export default function App() {
       const filename = `delhi-atlas-${areaName.toLowerCase().replace(/[^a-z0-9]+/g, "-")}-${manifest.snapshot.slice(0, 10)}`;
       if (kind === "csv")
         download(
-          new Blob(["\ufeff" + toCsv(analysis.result, manifest.id, areaName)], {
-            type: "text/csv;charset=utf-8",
-          }),
+          new Blob(
+            [
+              "\ufeff" +
+                toCsv(
+                  analysis.result,
+                  manifest.id,
+                  areaName,
+                  analysisSelection,
+                ),
+            ],
+            {
+              type: "text/csv;charset=utf-8",
+            },
+          ),
           filename + ".csv",
         );
       if (kind === "geojson")
@@ -689,6 +727,9 @@ export default function App() {
                     study_area: study,
                     study_name: areaName,
                     footprint_filter: size,
+                    analysis_scope: analyseFiltered ? "filtered" : "study",
+                    analysis_filters: analysisSelection,
+                    selection_description: analysisDescription,
                     source: manifest.source_url,
                     licence: manifest.licence,
                     attribution: manifest.attribution,
@@ -705,14 +746,14 @@ export default function App() {
         );
       if (kind === "brief") {
         const r = analysis.result;
-        const text = `# Delhi Atlas — ${areaName}\n\nDataset: ${manifest.id}\nSource: ${manifest.source_url}\nAttribution: ${manifest.attribution}; ${manifest.licence}\nFootprint filter: ${size}\n\n- Mapped buildings intersecting study: ${r.count}\n- Study extent inside pilot: ${fmt(r.areaM2, 2)} m²\n- Unioned footprint area inside study: ${fmt(r.footprintM2, 2)} m²\n- Footprint coverage of study extent (including water): ${fmt(r.coverage, 2)}%\n- Buildings with a recorded or estimated height: ${r.knownHeightCount} (${r.estimatedHeightCount} estimated from levels)\n- Buildings with unknown height: ${r.unknownHeightCount}\n\nThis is an incomplete OpenStreetMap snapshot, not a cadastral or measured building survey. Coverage is not FAR. Unknown heights use uniform 8 m display only; they are excluded from height statistics. Study windows are not administrative boundaries.\n\n## Reproduce\n\nUse the exported study boundary, same dataset and filter. The GeoJSON export contains clipped footprints; the CSV includes full and clipped areas.\n\nStudy boundary (WGS 84):\n\n\`\`\`json\n${JSON.stringify(study)}\n\`\`\`\n`;
+        const text = `# Delhi Atlas — ${areaName}\n\nDataset: ${manifest.id}\nSource: ${manifest.source_url}\nAttribution: ${manifest.attribution}; ${manifest.licence}\nFootprint filter: ${size}\nAnalysis selection: ${analysisDescription}\n\n- Mapped buildings intersecting study: ${r.count}\n- Study extent inside pilot: ${fmt(r.areaM2, 2)} m²\n- Unioned footprint area inside study: ${fmt(r.footprintM2, 2)} m²\n- Footprint coverage of study extent (including water): ${fmt(r.coverage, 2)}%\n- Buildings with a recorded or estimated height: ${r.knownHeightCount} (${r.estimatedHeightCount} estimated from levels)\n- Buildings with unknown height: ${r.unknownHeightCount}\n\nThis is an incomplete OpenStreetMap snapshot, not a cadastral or measured building survey. Coverage is not FAR. Unknown heights use uniform 8 m display only; they are excluded from height statistics. Study windows are not administrative boundaries.\n\n## Reproduce\n\nUse the exported study boundary, same dataset and filter. The GeoJSON export contains clipped footprints; the CSV includes full and clipped areas.\n\nStudy boundary (WGS 84):\n\n\`\`\`json\n${JSON.stringify(study)}\n\`\`\`\n`;
         download(
           new Blob([text], { type: "text/markdown" }),
           filename + "-brief.md",
         );
       }
       if (kind === "png") {
-        const source = map.current?.canvas();
+        const source = await map.current?.prepareCapture();
         if (!source) throw new Error("The map is not ready yet.");
         const canvas = document.createElement("canvas");
         const ratio = source.width / source.clientWidth;
@@ -757,12 +798,12 @@ export default function App() {
           y + 80,
         );
         ctx.fillText(
-          `${map.current?.camera()?.pitch ? "3D perspective — no uniform scale" : "2D map"} · ${timelineMode === "buildings" ? "Recorded building dates" : "Site milestones"} through ${year} · Context: ${context} · Period: ${period ?? "all"} · Undated: ${showUnknown ? "shown" : "hidden"}`,
+          `${map.current?.camera()?.pitch ? "3D perspective — no uniform scale" : "2D map"} · ${timelineMode === "buildings" ? "Recorded building dates" : "Site milestones"} through ${year} · Context: ${context} · Period: ${period ?? "all"} · Undated: ${!period && (timelineMode === "heritage" || showUnknown) ? "shown" : "hidden"}`,
           24,
           y + 102,
         );
         ctx.fillText(
-          `Map use: ${research.use} · Access: ${research.access} · Built from ${research.yearFrom}`,
+          `Map use: ${research.use} · Access: ${research.access} · Built from ${research.yearFrom} · Statistics: ${analyseFiltered ? "matching filters" : "all study buildings"}`,
           24,
           y + 124,
         );
@@ -1369,9 +1410,35 @@ export default function App() {
             </label>
             <p className="micro-note">
               Use and dates filter buildings. Access also filters mapped spaces
-              and routes; it does not establish ownership. Study statistics and
-              data exports use the boundary and footprint filter.
+              and routes; it does not establish ownership. Choose the analysis
+              scope below to apply building filters to statistics and exports.
             </p>
+            <div className="analysis-scope">
+              <label className="unknown-checkbox">
+                <input
+                  type="checkbox"
+                  checked={analyseFiltered}
+                  onChange={(e) => {
+                    setAnalyseFiltered(e.target.checked);
+                    setPlaying(false);
+                    setMotionInterrupt((i) => i + 1);
+                    setSelected(null);
+                    setMode("analyse");
+                  }}
+                />
+                Analyse this filtered selection
+              </label>
+              <p className="micro-note">
+                {analyseFiltered
+                  ? "Statistics, tables, comparison and data exports follow the building filters within each study boundary. Camera position, layer visibility and context colours do not exclude records."
+                  : "Statistics and data exports include all study buildings matching the footprint filter."}
+              </p>
+              {analyseFiltered && playing && (
+                <p role="status" className="micro-note">
+                  Pause chronology to calculate the filtered study.
+                </p>
+              )}
+            </div>
             <div className="surface-legend">
               <span>
                 <i style={{ background: "#87d85c" }} />
@@ -1399,6 +1466,10 @@ export default function App() {
               </span>
             </div>
           </section>
+          <PlanningPanel
+            data={data}
+            onFeature={(f) => selectFeature(f, true)}
+          />
           <ContextPanel
             context={context}
             onContext={changeContext}
@@ -1526,432 +1597,463 @@ export default function App() {
             </button>
           </div>
         )}
-        <aside
-          key={
-            heritageSelection?.id ??
-            featureSelection?.properties.id ??
-            "overview"
-          }
-          className={`right-panel panel ${selected ? "has-selection" : ""}`}
-          aria-label="Research inspector"
-        >
-          {selected ? (
-            <>
-              <div className="inspector-top">
-                <span className="eyebrow">
-                  {heritageSelection ? "A PLACE IN THE CITY" : "MAPPED FEATURE"}
-                </span>
-                <button
-                  className="icon-button"
-                  aria-label="Close feature details"
-                  onClick={() => setSelected(null)}
-                >
-                  <X size={17} />
-                </button>
-              </div>
-              {heritageSelection ? (
-                <>
-                  <HeritagePhoto site={heritageSelection} />
-                  <div className="detail-body">
-                    <span className="pill">{heritageSelection.type}</span>
-                    <h2>{heritageSelection.name}</h2>
-                    <p className="hindi-label" lang="hi">
-                      {heritageSelection.hindi}
-                    </p>
-                    <div className="heritage-date">
-                      <strong>
-                        {heritageSelection.datePrecision === "approximate"
-                          ? "c. "
-                          : ""}
-                        {heritageSelection.year}
-                      </strong>
-                      <span>
-                        {heritageSelection.period}
-                        <small>{heritageSelection.dateLabel}</small>
-                      </span>
-                    </div>
-                    <p className="story">{heritageSelection.story}</p>
-                    <HeritageDetails site={heritageSelection} />
-                    <a
-                      className="source-link"
-                      href={heritageSelection.source}
-                      target="_blank"
-                      rel="noreferrer"
-                    >
-                      {heritageSelection.sourceName}
-                      <ExternalLink size={13} />
-                    </a>
-                    <p className="micro-note">
-                      A sourced place profile. The marker is an approximate site
-                      location, not a surveyed footprint. The date describes the
-                      stated milestone; nearby buildings may be much newer.
-                    </p>
-                    <button
-                      className="secondary-button full"
-                      onClick={() =>
-                        applyArea(
-                          circle(heritageSelection.coords, 0.5, {
-                            steps: 64,
-                            units: "kilometers",
-                          }),
-                          `500 m around ${heritageSelection.name}`,
-                        )
-                      }
-                    >
-                      <Focus size={16} /> Study its surroundings
-                    </button>
-                  </div>
-                </>
-              ) : (
-                featureSelection && (
-                  <div className="detail-body">
-                    <div className="feature-glyph">
-                      <Building2 size={34} />
-                    </div>
-                    <span className="pill">
-                      {featureSelection.properties.kind === "station"
-                        ? "Station record"
-                        : featureSelection.properties.kind === "place"
-                          ? "Mapped place"
-                          : featureSelection.properties.kind === "building"
-                            ? "Building footprint"
-                            : "Mapped space or route"}
-                    </span>
-                    <h2>{featureTitle(featureSelection)}</h2>
-                    <p className="subtle">{featureSelection.properties.id}</p>
-                    {!featureName(featureSelection) && (
-                      <p className="micro-note">
-                        No name is recorded for this exact feature. Its address
-                        and source ID identify the record; nearby places have
-                        separate profiles.
+        <aside className="right-panel panel" aria-label="Research inspector">
+          <div
+            key={
+              heritageSelection?.id ??
+              featureSelection?.properties.id ??
+              "overview"
+            }
+            className={`inspector-content ${selected ? "has-selection" : ""}`}
+          >
+            {selected ? (
+              <>
+                <div className="inspector-top">
+                  <span className="eyebrow">
+                    {heritageSelection
+                      ? "A PLACE IN THE CITY"
+                      : "MAPPED FEATURE"}
+                  </span>
+                  <button
+                    className="icon-button"
+                    aria-label="Close feature details"
+                    onClick={() => setSelected(null)}
+                  >
+                    <X size={17} />
+                  </button>
+                </div>
+                {heritageSelection ? (
+                  <>
+                    <HeritagePhoto site={heritageSelection} />
+                    <div className="detail-body">
+                      <span className="pill">{heritageSelection.type}</span>
+                      <h2>{heritageSelection.name}</h2>
+                      <p className="hindi-label" lang="hi">
+                        {heritageSelection.hindi}
                       </p>
-                    )}
-                    <dl className="facts">
-                      <div>
-                        <dt>Recorded use</dt>
-                        <dd>
-                          {featureSelection.properties.kind === "building"
-                            ? useDefinition(featureSelection).label
-                            : featureSelection.properties.use || "Not recorded"}
-                        </dd>
+                      <div className="heritage-date">
+                        <strong>
+                          {heritageSelection.datePrecision === "approximate"
+                            ? "c. "
+                            : ""}
+                          {heritageSelection.year}
+                        </strong>
+                        <span>
+                          {heritageSelection.period}
+                          <small>{heritageSelection.dateLabel}</small>
+                        </span>
                       </div>
-                      {featureSelection.properties.kind === "building" && (
-                        <div>
-                          <dt>Footprint area</dt>
-                          <dd>
-                            {fmt(featureSelection.properties.area_m2 ?? 0)} m²
-                          </dd>
-                        </div>
-                      )}
-                      <div>
-                        <dt>Height</dt>
-                        <dd>
-                          {featureSelection.properties.height_m === null
-                            ? "Unknown"
-                            : `${featureSelection.properties.height_m} m (${featureSelection.properties.height_method.startsWith("Estimated:") ? "storey estimate" : "OSM tag"})`}
-                        </dd>
-                      </div>
-                      <div>
-                        <dt>Timeline date</dt>
-                        <dd>
-                          {buildingDate(featureSelection)?.label ?? "Unknown"}
-                        </dd>
-                      </div>
-                      <div>
-                        <dt>Source snapshot</dt>
-                        <dd>{featureSelection.properties.snapshot}</dd>
-                      </div>
-                    </dl>
-                    {featureSelection.properties.kind === "building" && (
+                      <p className="story">{heritageSelection.story}</p>
+                      <HeritageDetails site={heritageSelection} />
+                      <a
+                        className="source-link"
+                        href={heritageSelection.source}
+                        target="_blank"
+                        rel="noreferrer"
+                      >
+                        {heritageSelection.sourceName}
+                        <ExternalLink size={13} />
+                      </a>
                       <p className="micro-note">
-                        {featureSelection.properties.height_m === null
-                          ? "The 8 m extrusion is for visual context only. No measured height is available."
-                          : featureSelection.properties.height_method}
+                        A sourced place profile. The marker is an approximate
+                        site location, not a surveyed footprint. The date
+                        describes the stated milestone; nearby buildings may be
+                        much newer.
                       </p>
-                    )}
-                    <a
-                      href={featureSelection.properties.source_url}
-                      className="source-link"
-                      target="_blank"
-                      rel="noreferrer"
-                    >
-                      View current OpenStreetMap record
-                      <ExternalLink size={13} />
-                    </a>
-                    <p className="micro-note">
-                      The current online record may differ from this bundled
-                      snapshot.
-                    </p>
-                    <BuildingProfile
-                      feature={featureSelection}
-                      onHeritage={selectHeritage}
-                    />
-                  </div>
-                )
-              )}
-            </>
-          ) : mode === "explore" ? (
-            <>
-              <div className="inspector-top">
-                <span className="eyebrow">YOUR FIELD GUIDE</span>
-                <Layers3 size={17} />
-              </div>
-              <div className="guide-body">
-                <h2>
-                  Many Delhis.
-                  <br />
-                  <em>One living city.</em>
-                </h2>
-                <p>
-                  Look closer at the patterns that shape the capital. Choose a
-                  neighbourhood to begin.
-                </p>
-                <div className="neighbourhoods">
-                  {AREAS.slice(1).map((a, i) => (
-                    <button
-                      key={a.id}
-                      onClick={() => chooseArea(a.id)}
-                      className={areaName === a.name ? "chosen" : ""}
-                    >
-                      <span className="neighbourhood-number">0{i + 1}</span>
-                      <span>
-                        <strong>{a.name}</strong>
-                        <small>
-                          {i === 0
-                            ? "Lanes, courtyards & imperial anchors"
-                            : "Radial streets & modern civic life"}
-                        </small>
-                      </span>
-                      <ArrowRight size={16} />
-                    </button>
-                  ))}
-                </div>
-                <div className="guide-rule" />
-                <div className="small-title">
-                  {areaName.toUpperCase()} / AT A GLANCE
-                </div>
-                <Summary {...analysis} />
-                <button
-                  className="text-action"
-                  onClick={() => {
-                    setMode("analyse");
-                    setSelected(null);
-                  }}
-                >
-                  Make this a site study <ArrowRight size={14} />
-                </button>
-              </div>
-            </>
-          ) : mode === "analyse" ? (
-            <>
-              <div className="inspector-top">
-                <span className="eyebrow">SITE STUDY</span>
-                <Ruler size={17} />
-              </div>
-              <div className="guide-body">
-                <h2>
-                  Draw a question.
-                  <br />
-                  <em>Read the ground.</em>
-                </h2>
-                <p>
-                  Select a study window, draw a boundary, or place a distance
-                  buffer.
-                </p>
-                <label className="field-label" htmlFor="study-window">
-                  Study area
-                </label>
-                <div className="select-wrap">
-                  <select
-                    id="study-window"
-                    value={
-                      AREAS.find((a) => a.name === areaName)?.id ?? "custom"
-                    }
-                    onChange={(e) => chooseArea(e.target.value)}
-                  >
-                    {AREAS.map((a) => (
-                      <option value={a.id} key={a.id}>
-                        {a.name}
-                      </option>
-                    ))}
-                    {!AREAS.some((a) => a.name === areaName) && (
-                      <option value="custom">{areaName}</option>
-                    )}
-                  </select>
-                  <ChevronDown size={15} />
-                </div>
-                <div className="draw-actions">
-                  <button
-                    className={drawMode === "polygon" ? "active" : ""}
-                    onClick={() => {
-                      setDrawMode("polygon");
-                      setDrawPoints([]);
-                    }}
-                  >
-                    <SquareDashedMousePointer size={18} />
-                    Draw boundary
-                  </button>
-                  <button
-                    className={drawMode === "radius" ? "active" : ""}
-                    onClick={() => {
-                      setDrawMode("radius");
-                      setDrawPoints([]);
-                    }}
-                  >
-                    <Focus size={18} />
-                    Place buffer
-                  </button>
-                </div>
-                <div className="radius-row">
-                  <label htmlFor="radius">Buffer radius</label>
-                  <select
-                    id="radius"
-                    value={radius}
-                    onChange={(e) => setRadius(Number(e.target.value))}
-                  >
-                    <option value="250">250 m</option>
-                    <option value="500">500 m</option>
-                    <option value="1000">1,000 m</option>
-                  </select>
-                </div>
-                <p className="micro-note">
-                  Straight-line distance, not a walking catchment.
-                </p>
-                <button
-                  className="text-action import-button"
-                  onClick={() => importInput.current?.click()}
-                >
-                  <Upload size={14} /> Import a GeoJSON boundary
-                </button>
-                <div className="guide-rule" />
-                <div className="small-title">{areaName.toUpperCase()}</div>
-                <Summary {...analysis} />
-                <button
-                  className="secondary-button full"
-                  disabled={!analysis.result}
-                  onClick={() => setModal("table")}
-                >
-                  <Table2 size={16} />
-                  Inspect building records
-                  <ChevronRight size={14} />
-                </button>
-                {area && (
-                  <button
-                    className="text-action"
-                    onClick={() => chooseArea("pilot")}
-                  >
-                    Clear study area <X size={13} />
-                  </button>
-                )}
-              </div>
-            </>
-          ) : (
-            <>
-              <div className="inspector-top">
-                <span className="eyebrow">NEIGHBOURHOOD COMPARISON</span>
-                <Layers3 size={17} />
-              </div>
-              <div className="guide-body">
-                <h2>
-                  Two places.
-                  <br />
-                  <em>A closer reading.</em>
-                </h2>
-                <p>
-                  Compare recorded built fabric within two study windows, using
-                  the same snapshot and filter.
-                </p>
-                <div className="compare-selects">
-                  {[0, 1].map((i) => (
-                    <label key={i}>
-                      <span className="small-title">
-                        WINDOW {i === 0 ? "A" : "B"}
-                      </span>
-                      <select
-                        aria-label={`Comparison window ${i === 0 ? "A" : "B"}`}
-                        value={compareIds[i]}
-                        onChange={(e) =>
-                          setCompareIds((ids) =>
-                            i === 0
-                              ? [e.target.value, ids[1]]
-                              : [ids[0], e.target.value],
+                      <button
+                        className="secondary-button full"
+                        onClick={() =>
+                          applyArea(
+                            circle(heritageSelection.coords, 0.5, {
+                              steps: 64,
+                              units: "kilometers",
+                            }),
+                            `500 m around ${heritageSelection.name}`,
                           )
                         }
                       >
-                        {AREAS.map((a) => (
-                          <option key={a.id} value={a.id}>
-                            {a.name}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-                  ))}
-                </div>
-                {compareA.busy || compareB.busy ? (
-                  <div className="calculating">
-                    <LoaderCircle size={16} className="spin" /> Comparing study
-                    windows…
-                  </div>
-                ) : compareA.result && compareB.result ? (
-                  <div className="comparison-table">
-                    <div className="comparison-head">
-                      <span>MEASURE</span>
-                      <b>A</b>
-                      <b>B</b>
+                        <Focus size={16} /> Study its surroundings
+                      </button>
                     </div>
-                    {[
-                      [
-                        "Mapped buildings",
-                        fmt(compareA.result.count),
-                        fmt(compareB.result.count),
-                      ],
-                      [
-                        "Extent, km²",
-                        fmt(compareA.result.areaM2 / 1e6, 2),
-                        fmt(compareB.result.areaM2 / 1e6, 2),
-                      ],
-                      [
-                        "Footprint coverage",
-                        `${fmt(compareA.result.coverage, 1)}%`,
-                        `${fmt(compareB.result.coverage, 1)}%`,
-                      ],
-                      [
-                        "Height available",
-                        fmt(compareA.result.knownHeightCount),
-                        fmt(compareB.result.knownHeightCount),
-                      ],
-                    ].map(([label, a, b]) => (
-                      <div key={label}>
-                        <span>{label}</span>
-                        <strong>{a}</strong>
-                        <strong>{b}</strong>
+                  </>
+                ) : (
+                  featureSelection && (
+                    <div className="detail-body">
+                      <div className="feature-glyph">
+                        <Building2 size={34} />
                       </div>
+                      <span className="pill">
+                        {featureSelection.properties.kind === "station"
+                          ? "Station record"
+                          : featureSelection.properties.kind === "place"
+                            ? "Mapped place"
+                            : featureSelection.properties.kind === "building"
+                              ? "Building footprint"
+                              : "Mapped space or route"}
+                      </span>
+                      <h2>{featureTitle(featureSelection)}</h2>
+                      <p className="subtle">{featureSelection.properties.id}</p>
+                      {!featureName(featureSelection) && (
+                        <p className="micro-note">
+                          No name is recorded for this exact feature. Its
+                          address and source ID identify the record; nearby
+                          places have separate profiles.
+                        </p>
+                      )}
+                      <dl className="facts">
+                        <div>
+                          <dt>Recorded use</dt>
+                          <dd>
+                            {featureSelection.properties.kind === "building"
+                              ? useDefinition(featureSelection).label
+                              : featureSelection.properties.use ||
+                                "Not recorded"}
+                          </dd>
+                        </div>
+                        {featureSelection.properties.kind === "building" && (
+                          <div>
+                            <dt>Footprint area</dt>
+                            <dd>
+                              {fmt(featureSelection.properties.area_m2 ?? 0)} m²
+                            </dd>
+                          </div>
+                        )}
+                        <div>
+                          <dt>Height</dt>
+                          <dd>
+                            {featureSelection.properties.height_m === null
+                              ? "Unknown"
+                              : `${featureSelection.properties.height_m} m (${featureSelection.properties.height_method.startsWith("Estimated:") ? "storey estimate" : "OSM tag"})`}
+                          </dd>
+                        </div>
+                        <div>
+                          <dt>Timeline date</dt>
+                          <dd>
+                            {buildingDate(featureSelection)?.label ?? "Unknown"}
+                          </dd>
+                        </div>
+                        <div>
+                          <dt>Source snapshot</dt>
+                          <dd>{featureSelection.properties.snapshot}</dd>
+                        </div>
+                      </dl>
+                      {featureSelection.properties.kind === "building" && (
+                        <p className="micro-note">
+                          {featureSelection.properties.height_m === null
+                            ? "The 8 m extrusion is for visual context only. No measured height is available."
+                            : featureSelection.properties.height_method}
+                        </p>
+                      )}
+                      <a
+                        href={featureSelection.properties.source_url}
+                        className="source-link"
+                        target="_blank"
+                        rel="noreferrer"
+                      >
+                        View current OpenStreetMap record
+                        <ExternalLink size={13} />
+                      </a>
+                      <p className="micro-note">
+                        The current online record may differ from this bundled
+                        snapshot.
+                      </p>
+                      <BuildingProfile
+                        feature={featureSelection}
+                        onHeritage={selectHeritage}
+                      />
+                    </div>
+                  )
+                )}
+              </>
+            ) : mode === "explore" ? (
+              <>
+                <div className="inspector-top">
+                  <span className="eyebrow">YOUR FIELD GUIDE</span>
+                  <Layers3 size={17} />
+                </div>
+                <div className="guide-body">
+                  <h2>
+                    Many Delhis.
+                    <br />
+                    <em>One living city.</em>
+                  </h2>
+                  <p>
+                    Look closer at the patterns that shape the capital. Choose a
+                    neighbourhood to begin.
+                  </p>
+                  <div className="neighbourhoods">
+                    {AREAS.slice(1).map((a, i) => (
+                      <button
+                        key={a.id}
+                        onClick={() => chooseArea(a.id)}
+                        className={areaName === a.name ? "chosen" : ""}
+                      >
+                        <span className="neighbourhood-number">0{i + 1}</span>
+                        <span>
+                          <strong>{a.name}</strong>
+                          <small>
+                            {i === 0
+                              ? "Lanes, courtyards & imperial anchors"
+                              : "Radial streets & modern civic life"}
+                          </small>
+                        </span>
+                        <ArrowRight size={16} />
+                      </button>
                     ))}
                   </div>
-                ) : (
-                  <p className="error-text">
-                    {compareA.error || compareB.error}
+                  <div className="guide-rule" />
+                  <div className="small-title">
+                    {areaName.toUpperCase()} / AT A GLANCE
+                  </div>
+                  <p
+                    className="micro-note analysis-scope-readout"
+                    data-analysis-scope={analyseFiltered ? "filtered" : "study"}
+                  >
+                    {analysisDescription}
                   </p>
-                )}
-                <p className="micro-note">
-                  Study windows are not official neighbourhood boundaries.
-                  Uneven source coverage limits comparison. Coverage is not FAR.
-                </p>
-                <div className="draw-actions">
-                  <button onClick={() => chooseArea(compareIds[0])}>
-                    View window A<ArrowRight size={14} />
-                  </button>
-                  <button onClick={() => chooseArea(compareIds[1])}>
-                    View window B<ArrowRight size={14} />
+                  <Summary {...analysis} />
+                  <button
+                    className="text-action"
+                    onClick={() => {
+                      setMode("analyse");
+                      setSelected(null);
+                    }}
+                  >
+                    Make this a site study <ArrowRight size={14} />
                   </button>
                 </div>
-                <p className="micro-note">
-                  Exports use the current map study: {areaName}. Choose “View
-                  window” to export that selection.
-                </p>
-              </div>
-            </>
-          )}
+              </>
+            ) : mode === "analyse" ? (
+              <>
+                <div className="inspector-top">
+                  <span className="eyebrow">SITE STUDY</span>
+                  <Ruler size={17} />
+                </div>
+                <div className="guide-body">
+                  <h2>
+                    Draw a question.
+                    <br />
+                    <em>Read the ground.</em>
+                  </h2>
+                  <p>
+                    Select a study window, draw a boundary, or place a distance
+                    buffer.
+                  </p>
+                  <label className="field-label" htmlFor="study-window">
+                    Study area
+                  </label>
+                  <div className="select-wrap">
+                    <select
+                      id="study-window"
+                      value={
+                        AREAS.find((a) => a.name === areaName)?.id ?? "custom"
+                      }
+                      onChange={(e) => chooseArea(e.target.value)}
+                    >
+                      {AREAS.map((a) => (
+                        <option value={a.id} key={a.id}>
+                          {a.name}
+                        </option>
+                      ))}
+                      {!AREAS.some((a) => a.name === areaName) && (
+                        <option value="custom">{areaName}</option>
+                      )}
+                    </select>
+                    <ChevronDown size={15} />
+                  </div>
+                  <div className="draw-actions">
+                    <button
+                      className={drawMode === "polygon" ? "active" : ""}
+                      onClick={() => {
+                        setDrawMode("polygon");
+                        setDrawPoints([]);
+                      }}
+                    >
+                      <SquareDashedMousePointer size={18} />
+                      Draw boundary
+                    </button>
+                    <button
+                      className={drawMode === "radius" ? "active" : ""}
+                      onClick={() => {
+                        setDrawMode("radius");
+                        setDrawPoints([]);
+                      }}
+                    >
+                      <Focus size={18} />
+                      Place buffer
+                    </button>
+                  </div>
+                  <div className="radius-row">
+                    <label htmlFor="radius">Buffer radius</label>
+                    <select
+                      id="radius"
+                      value={radius}
+                      onChange={(e) => setRadius(Number(e.target.value))}
+                    >
+                      <option value="250">250 m</option>
+                      <option value="500">500 m</option>
+                      <option value="1000">1,000 m</option>
+                    </select>
+                  </div>
+                  <p className="micro-note">
+                    Straight-line distance, not a walking catchment.
+                  </p>
+                  <button
+                    className="text-action import-button"
+                    onClick={() => importInput.current?.click()}
+                  >
+                    <Upload size={14} /> Import a GeoJSON boundary
+                  </button>
+                  <div className="guide-rule" />
+                  <div className="small-title">{areaName.toUpperCase()}</div>
+                  <p
+                    className="micro-note analysis-scope-readout"
+                    data-analysis-scope={analyseFiltered ? "filtered" : "study"}
+                  >
+                    {analysisDescription}
+                  </p>
+                  <Summary {...analysis} />
+                  <button
+                    className="secondary-button full"
+                    disabled={!analysis.result}
+                    onClick={() => setModal("table")}
+                  >
+                    <Table2 size={16} />
+                    Inspect building records
+                    <ChevronRight size={14} />
+                  </button>
+                  {area && (
+                    <button
+                      className="text-action"
+                      onClick={() => chooseArea("pilot")}
+                    >
+                      Clear study area <X size={13} />
+                    </button>
+                  )}
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="inspector-top">
+                  <span className="eyebrow">NEIGHBOURHOOD COMPARISON</span>
+                  <Layers3 size={17} />
+                </div>
+                <div className="guide-body">
+                  <h2>
+                    Two places.
+                    <br />
+                    <em>A closer reading.</em>
+                  </h2>
+                  <p>
+                    Compare recorded built fabric within two study windows,
+                    using the same snapshot and filter.
+                  </p>
+                  <div className="compare-selects">
+                    {[0, 1].map((i) => (
+                      <label key={i}>
+                        <span className="small-title">
+                          WINDOW {i === 0 ? "A" : "B"}
+                        </span>
+                        <select
+                          aria-label={`Comparison window ${i === 0 ? "A" : "B"}`}
+                          value={compareIds[i]}
+                          onChange={(e) =>
+                            setCompareIds((ids) =>
+                              i === 0
+                                ? [e.target.value, ids[1]]
+                                : [ids[0], e.target.value],
+                            )
+                          }
+                        >
+                          {AREAS.map((a) => (
+                            <option key={a.id} value={a.id}>
+                              {a.name}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                    ))}
+                  </div>
+                  {!analysisEnabled ? (
+                    <p role="status" className="micro-note">
+                      Pause chronology to calculate the filtered comparison.
+                    </p>
+                  ) : compareA.busy || compareB.busy ? (
+                    <div className="calculating">
+                      <LoaderCircle size={16} className="spin" /> Comparing
+                      study windows…
+                    </div>
+                  ) : compareA.result && compareB.result ? (
+                    <div className="comparison-table">
+                      <div className="comparison-head">
+                        <span>MEASURE</span>
+                        <b>A</b>
+                        <b>B</b>
+                      </div>
+                      {[
+                        [
+                          "Mapped buildings",
+                          fmt(compareA.result.count),
+                          fmt(compareB.result.count),
+                        ],
+                        [
+                          "Extent, km²",
+                          fmt(compareA.result.areaM2 / 1e6, 2),
+                          fmt(compareB.result.areaM2 / 1e6, 2),
+                        ],
+                        [
+                          "Footprint coverage",
+                          `${fmt(compareA.result.coverage, 1)}%`,
+                          `${fmt(compareB.result.coverage, 1)}%`,
+                        ],
+                        [
+                          "Height available",
+                          fmt(compareA.result.knownHeightCount),
+                          fmt(compareB.result.knownHeightCount),
+                        ],
+                      ].map(([label, a, b]) => (
+                        <div key={label}>
+                          <span>{label}</span>
+                          <strong>{a}</strong>
+                          <strong>{b}</strong>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="error-text">
+                      {compareA.error || compareB.error}
+                    </p>
+                  )}
+                  <p className="micro-note">
+                    Study windows are not official neighbourhood boundaries.
+                    Uneven source coverage limits comparison. Coverage is not
+                    FAR.
+                  </p>
+                  <div className="draw-actions">
+                    <button onClick={() => chooseArea(compareIds[0])}>
+                      View window A<ArrowRight size={14} />
+                    </button>
+                    <button onClick={() => chooseArea(compareIds[1])}>
+                      View window B<ArrowRight size={14} />
+                    </button>
+                  </div>
+                  <p className="micro-note">
+                    Exports use the current map study: {areaName}. Choose “View
+                    window” to export that selection.
+                  </p>
+                </div>
+              </>
+            )}
+          </div>
+          <ResearchTools
+            busy={analysis.busy || !analysisEnabled}
+            result={analysis.result}
+            selected={featureSelection}
+            onSelect={(f) => selectFeature(f, true)}
+            studyName={areaName}
+            filterDescription={analysisDescription}
+            dataset={manifest?.id ?? "Loading"}
+          />
         </aside>
         <div className="bottom-dock">
           <div className="district-tabs" aria-label="Pilot study windows">
@@ -2233,9 +2335,16 @@ export default function App() {
           <p className="micro-note">
             Dataset: {manifest?.id}. Footprint filter: {size}. Map images
             include contextual buildings outside your study area. Data exports
-            contain buildings matching the study boundary and footprint-size
-            filter. Use, access, timeline, period and context filters affect the
-            map image, not the research dataset.
+            contain buildings within the study boundary. Analysis scope:{" "}
+            {analyseFiltered
+              ? "matching map building filters"
+              : "all study buildings with footprint filter"}
+            .
+            {analyseFiltered
+              ? ` ${analysisDescription}.`
+              : " Enable ‘Analyse this filtered selection’ to apply use, access and date filters to research data."}
+            Context colours and layer visibility do not change record
+            eligibility.
           </p>
           {exportBusy && (
             <p role="status">

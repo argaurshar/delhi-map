@@ -27,7 +27,15 @@ describe("Building evidence", () => {
     expect(jama.properties.start_date).toBeNull();
     expect(buildingDate(jama)?.year).toBe(1656);
     expect(buildingDate(jama)?.sourceUrl).toContain("incredibleindia.gov.in");
-    expect(city.features.filter((f) => buildingEvidence(f))).toHaveLength(17);
+    expect(city.features.filter((f) => buildingEvidence(f))).toHaveLength(18);
+    const archives = city.features.find(
+      (f) => f.properties.id === "relation/5507689",
+    )!;
+    expect(buildingEvidence(archives)?.sources[0].url).toContain(
+      "nationalarchives.nic.in",
+    );
+    expect(buildingEvidence(archives)?.date?.year).toBeNull();
+    expect(buildingDate(archives)).toBeNull();
     for (const patch of [
       { id: "way/nearby" },
       { name: "A neighbouring shop" },

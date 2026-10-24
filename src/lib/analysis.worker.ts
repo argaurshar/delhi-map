@@ -1,5 +1,6 @@
-import { analyse } from "./analysis";
-import type { CityData, SizeFilter, StudyArea } from "./types";
+import { analyse, analyseOverviewSelection } from "./analysis";
+import type { FilterSelection } from "./selection";
+import type { CityData, SizeFilter, StudyArea, Overview } from "./types";
 let data: CityData;
 self.onmessage = (
   event: MessageEvent<{
@@ -7,6 +8,8 @@ self.onmessage = (
     data?: CityData;
     area: StudyArea;
     size: SizeFilter;
+    selection?: FilterSelection | null;
+    overview?: Overview | null;
   }>,
 ) => {
   const message = event.data;
@@ -14,7 +17,15 @@ self.onmessage = (
   try {
     self.postMessage({
       id: message.id,
-      result: analyse(data, message.area, message.size),
+      result:
+        message.overview && message.selection
+          ? analyseOverviewSelection(
+              data,
+              message.overview,
+              message.size,
+              message.selection,
+            )
+          : analyse(data, message.area, message.size, message.selection),
     });
   } catch (error) {
     self.postMessage({
